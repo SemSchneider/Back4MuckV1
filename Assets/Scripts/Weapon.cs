@@ -1,9 +1,9 @@
 using System.Collections;
 using UnityEngine;
 
-public class NewMonoBehaviourScript : MonoBehaviour
+public class Weapon : MonoBehaviour
 {
-    [SerializeField] private Camera playerCamera;
+    private Camera mainCamera;
     [Header("Fire Settings")]
     public float shootingDelay = 0.1f;     // seconds between shots
     public int bulletsPerBurst = 3;
@@ -30,8 +30,8 @@ public class NewMonoBehaviourScript : MonoBehaviour
 
     private void Awake()
     {
-        if (!playerCamera) playerCamera = Camera.main;
-        if (!playerCamera) Debug.LogError("Assign playerCamera (or tag a camera MainCamera).", this);
+        mainCamera = Camera.main;
+        if (!mainCamera) Debug.LogError("No Camera tagged MainCamera was found.", this);
         if (!bulletSpawn) Debug.LogError("Assign bulletSpawn.", this);
         if (!bulletPrefab) Debug.LogError("Assign bulletPrefab (with Rigidbody).", this);
     }
@@ -136,9 +136,9 @@ public class NewMonoBehaviourScript : MonoBehaviour
 
     private Vector3 CalculateDirectionWithSpread()
     {
-        if (!playerCamera) return transform.forward;
+        if (!mainCamera) return transform.forward;
 
-        Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        Ray ray = mainCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
         Vector3 targetPoint = Physics.Raycast(ray, out RaycastHit hit)
             ? hit.point
             : ray.GetPoint(75f);
@@ -147,7 +147,7 @@ public class NewMonoBehaviourScript : MonoBehaviour
 
         float x = Random.Range(-spreadIntensity, spreadIntensity);
         float y = Random.Range(-spreadIntensity, spreadIntensity);
-        Vector3 spread = playerCamera.transform.right * x + playerCamera.transform.up * y;
+        Vector3 spread = mainCamera.transform.right * x + mainCamera.transform.up * y;
 
         return (baseDir + spread).normalized;
     }

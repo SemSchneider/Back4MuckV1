@@ -22,14 +22,39 @@ public class Bullet : MonoBehaviour
 
             Destroy(gameObject);
         }
+        if (objectWeHit.gameObject.CompareTag("Beer"))
+        {
+            print("hit a beer");
+            objectWeHit.gameObject.GetComponent<BeerBottle>().Shatter();
+        }
 
     }
     void CreateBulletImpactEffect(Collision objectWeHit)
     {
+        if (objectWeHit == null || objectWeHit.contactCount == 0)
+        {
+            Debug.LogWarning("No collision contacts available for bullet impact.", this);
+            return;
+        }
+
+        var globalRefs = GlobalReferences.Instance;
+        if (globalRefs == null)
+        {
+            Debug.LogError("GlobalReferences.Instance is null. Ensure a GlobalReferences object exists in the scene.", this);
+            return;
+        }
+
+        var impactPrefab = globalRefs.bulletImpactEffectPrefab;
+        if (impactPrefab == null)
+        {
+            Debug.LogError("bulletImpactEffectPrefab is not assigned on GlobalReferences.", globalRefs);
+            return;
+        }
+
         ContactPoint contact = objectWeHit.contacts[0];
 
         GameObject hole = Instantiate(
-            GlobalReferences.Instance.bulletImpactEffectPrefab,
+            impactPrefab,
             contact.point + contact.normal * 0.001f,   // slight offset to avoid z-fighting
             Quaternion.LookRotation(contact.normal)      // rotate to align with surface normal
         );
