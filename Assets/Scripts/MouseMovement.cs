@@ -36,9 +36,9 @@ public class MouseMovement : MonoBehaviour
 
     void LateUpdate()
     {
-        // Pitch on camera + holder (same pivot as camera)
+        // Pitch only on camera - weapon stays fixed like Counter-Strike
         if (cameraTransform) cameraTransform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
-        if (weaponHolder)    weaponHolder.localRotation    = Quaternion.Euler(pitch, 0f, 0f);
+        // Weapon holder stays fixed - no pitch rotation applied
         // (No roll applied)
     }
 

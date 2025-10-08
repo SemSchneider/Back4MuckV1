@@ -38,6 +38,14 @@ public class Weapon : MonoBehaviour
     [Header("UI")]
     public TMP_Text ammoText;
 
+    [Header("Weapon Positioning")]
+    [Tooltip("Proper position when equipped in player's hands")]
+    public Vector3 equippedPosition = Vector3.zero;
+    [Tooltip("Proper rotation when equipped in player's hands")]
+    public Vector3 equippedRotation = Vector3.zero;
+    [Tooltip("Proper scale when equipped in player's hands")]
+    public Vector3 equippedScale = Vector3.one;
+
     public enum WeaponAudioProfile { Colt1911, AK74 }
     [Header("Audio Profile")]
     public WeaponAudioProfile audioProfile = WeaponAudioProfile.Colt1911;
@@ -68,6 +76,38 @@ public class Weapon : MonoBehaviour
     private void OnEnable()
     {
         UpdateAmmoUI();
+    }
+
+    /// <summary>
+    /// Positions the weapon correctly when equipped in player's hands
+    /// </summary>
+    public void SetEquippedPosition()
+    {
+        if (transform.parent != null)
+        {
+            transform.localPosition = equippedPosition;
+            transform.localRotation = Quaternion.Euler(equippedRotation);
+            transform.localScale = equippedScale;
+        }
+    }
+
+    /// <summary>
+    /// Captures the current transform values as the equipped position (useful for setup)
+    /// </summary>
+    [ContextMenu("Capture Current Position as Equipped")]
+    public void CaptureCurrentPositionAsEquipped()
+    {
+        if (transform.parent != null)
+        {
+            equippedPosition = transform.localPosition;
+            equippedRotation = transform.localEulerAngles;
+            equippedScale = transform.localScale;
+            Debug.Log($"Captured equipped position: {equippedPosition}, rotation: {equippedRotation}, scale: {equippedScale}", this);
+        }
+        else
+        {
+            Debug.LogWarning("Weapon must be a child of another object to capture equipped position.", this);
+        }
     }
 
     private void OnValidate()
