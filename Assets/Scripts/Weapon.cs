@@ -38,6 +38,10 @@ public class Weapon : MonoBehaviour
     [Header("UI")]
     public TMP_Text ammoText;
 
+    public enum WeaponAudioProfile { Colt1911, AK74 }
+    [Header("Audio Profile")]
+    public WeaponAudioProfile audioProfile = WeaponAudioProfile.Colt1911;
+
     public enum ShootingMode { Automatic, Burst, Single }
     public ShootingMode currentShootingMode = ShootingMode.Automatic;
 
@@ -288,7 +292,17 @@ public class Weapon : MonoBehaviour
     private void PlayShootSound()
     {
         if (SoundManager.Instance == null) return;
-        var src = SoundManager.Instance.shootingSound1911;
+        AudioSource src = null;
+        switch (audioProfile)
+        {
+            case WeaponAudioProfile.AK74:
+                src = SoundManager.Instance.shootingSoundAK74 ? SoundManager.Instance.shootingSoundAK74 : SoundManager.Instance.shootingSound1911;
+                break;
+            case WeaponAudioProfile.Colt1911:
+            default:
+                src = SoundManager.Instance.shootingSound1911;
+                break;
+        }
         if (!src)
         {
             return;
@@ -410,7 +424,17 @@ public class Weapon : MonoBehaviour
     private void PlayReloadSoundIfAvailable()
     {
         if (SoundManager.Instance == null) return;
-        var src = SoundManager.Instance.reloadSound1911;
+        AudioSource src = null;
+        switch (audioProfile)
+        {
+            case WeaponAudioProfile.AK74:
+                src = SoundManager.Instance.reloadSoundAK74 ? SoundManager.Instance.reloadSoundAK74 : SoundManager.Instance.reloadSound1911;
+                break;
+            case WeaponAudioProfile.Colt1911:
+            default:
+                src = SoundManager.Instance.reloadSound1911;
+                break;
+        }
         if (!src) return;
 
         var clip = src.clip;

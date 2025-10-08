@@ -10,6 +10,10 @@ public class SoundManager : MonoBehaviour
     public AudioSource reloadSound1911;
     public AudioSource emptyMagazineSound;
 
+		// AK74 specific sounds
+		public AudioSource shootingSoundAK74;
+		public AudioSource reloadSoundAK74;
+
     public GameObject player;
     public GameObject playerCamera;
     public GameObject weapon;
