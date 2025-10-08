@@ -5,6 +5,7 @@ public class PlayerMovement : MonoBehaviour
 {
     private CharacterController controller;
     public float speed = 12f;
+    public float sprintSpeed = 18f;
     public float gravity = -9.81f * 2;
     public float jumpHeight = 3f;
 
@@ -35,8 +36,11 @@ public class PlayerMovement : MonoBehaviour
         float x = Input.GetAxis("Horizontal");
         float z = Input.GetAxis("Vertical");
 
-        Vector3 move = transform.right * x + transform.forward * z;
-        controller.Move(move * speed * Time.deltaTime);
+		Vector3 move = transform.right * x + transform.forward * z;
+
+		// hold Left Shift to sprint while grounded
+		float appliedSpeed = (Input.GetKey(KeyCode.LeftShift) && isGrounded && (x != 0f || z != 0f)) ? sprintSpeed : speed;
+		controller.Move(move * appliedSpeed * Time.deltaTime);
 
         if (Input.GetButtonDown("Jump") && isGrounded)
         {
