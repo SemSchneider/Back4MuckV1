@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using TMPro;
 
 public class Weapon : MonoBehaviour
 {
@@ -24,6 +25,18 @@ public class Weapon : MonoBehaviour
     public GameObject muzzleFlashEffectPrefab;
     public Animator weaponAnimator;
     public string shootTriggerName = "RECOIL";
+    [Tooltip("Animator trigger name for reload animation (optional)")]
+    public string reloadTriggerName = "RELOAD";
+
+    [Header("Ammo / Reload")]
+    public float reloadTime = 1.6f;
+    [Min(1)]
+    public int magazineSize = 12;
+    public int bulletLeft;
+    public bool isReloading;
+
+    [Header("UI")]
+    public TMP_Text ammoText;
 
     public enum ShootingMode { Automatic, Burst, Single }
     public ShootingMode currentShootingMode = ShootingMode.Automatic;
@@ -43,10 +56,43 @@ public class Weapon : MonoBehaviour
         {
             weaponAnimator = GetComponentInChildren<Animator>();
         }
+
+        bulletLeft = magazineSize;
+        UpdateAmmoUI();
+    }
+
+    private void OnEnable()
+    {
+        UpdateAmmoUI();
+    }
+
+    private void OnValidate()
+    {
+        // Keep values sane when editing in the Inspector
+        magazineSize = Mathf.Max(1, magazineSize);
+        if (!Application.isPlaying)
+        {
+            // Make sure starting ammo does not exceed mag size in edit mode
+            bulletLeft = Mathf.Clamp(bulletLeft, 0, magazineSize);
+            UpdateAmmoUI();
+        }
+    }
+
+    [ContextMenu("Refill Magazine")]
+    private void RefillMagazine()
+    {
+        bulletLeft = magazineSize;
+        UpdateAmmoUI();
     }
 
     private void Update()
     {
+        // Manual reload input
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            TryStartReload();
+        }
+
         switch (currentShootingMode)
         {
             case ShootingMode.Automatic:
@@ -64,9 +110,20 @@ public class Weapon : MonoBehaviour
                 break;
         }
 
-        // Start the fire loop when trigger engages; the coroutine manages its own lifetime
+        // Start the fire loop when trigger engages; block if empty to avoid an extra shot edge case
         if (isTriggerHeld && !isFiring)
         {
+            if (isReloading)
+            {
+                return;
+            }
+            if (bulletLeft <= 0)
+            {
+                PlayEmptyMagSoundIfAvailable();
+                TryStartReload();
+                isTriggerHeld = false;
+                return;
+            }
             isFiring = true;
             fireLoop = StartCoroutine(FireLoop());
         }
@@ -81,9 +138,19 @@ public class Weapon : MonoBehaviour
             // While the trigger remains held, fire bursts with an interval between bursts
             while (isTriggerHeld)
             {
+                if (isReloading) { yield return null; continue; }
+                if (bulletLeft <= 0)
+                {
+                    // auto-reload on empty when attempting to fire
+                    PlayEmptyMagSoundIfAvailable();
+                    TryStartReload();
+                    yield return null;
+                    continue;
+                }
                 int shotsRemainingInBurst = bulletsPerBurst;
                 while (shotsRemainingInBurst-- > 0)
                 {
+                    if (isReloading || bulletLeft <= 0) break;
                     FireOnce();
                     // If player releases during a burst, stop early
                     if (!isTriggerHeld) break;
@@ -103,6 +170,18 @@ public class Weapon : MonoBehaviour
 
         if (currentShootingMode == ShootingMode.Single)
         {
+            if (isReloading)
+            {
+                isFiring = false;
+                yield break;
+            }
+            if (bulletLeft <= 0)
+            {
+                PlayEmptyMagSoundIfAvailable();
+                TryStartReload();
+                isFiring = false;
+                yield break;
+            }
             FireOnce();
             // wait once so holding mouse doesn’t auto-repeat
             yield return new WaitForSeconds(singleShotDelay);
@@ -114,6 +193,18 @@ public class Weapon : MonoBehaviour
         // Automatic
         while (isTriggerHeld)
         {
+            if (isReloading)
+            {
+                yield return null;
+                continue;
+            }
+            if (bulletLeft <= 0)
+            {
+                PlayEmptyMagSoundIfAvailable();
+                TryStartReload();
+                yield return null;
+                continue;
+            }
             FireOnce();
             yield return new WaitForSeconds(shootingDelay);
         }
@@ -124,6 +215,7 @@ public class Weapon : MonoBehaviour
     private void FireOnce()
     {
         if (!bulletPrefab || !bulletSpawn) return;
+        if (bulletLeft <= 0 || isReloading) return;
 
         TriggerShootAnimation();
         PlayShootSound();
@@ -143,8 +235,47 @@ public class Weapon : MonoBehaviour
         }
 
         if (bulletPrefabLifeTime > 0f) StartCoroutine(DestroyBulletAfterTime(bullet, bulletPrefabLifeTime));
+        bulletLeft = Mathf.Max(0, bulletLeft - 1);
+        UpdateAmmoUI();
         // Debug to confirm it fired:
         // Debug.Log("FIRE", this);
+    }
+
+    private void TryStartReload()
+    {
+        if (isReloading) return;
+        if (bulletLeft >= magazineSize) return;
+        StartCoroutine(ReloadRoutine());
+    }
+
+    private IEnumerator ReloadRoutine()
+    {
+        isReloading = true;
+        PlayReloadSoundIfAvailable();
+        if (weaponAnimator && !string.IsNullOrEmpty(reloadTriggerName))
+        {
+            weaponAnimator.ResetTrigger(reloadTriggerName);
+            weaponAnimator.SetTrigger(reloadTriggerName);
+        }
+        if (reloadTime > 0f)
+        {
+            yield return new WaitForSeconds(reloadTime);
+        }
+        bulletLeft = magazineSize;
+        isReloading = false;
+        UpdateAmmoUI();
+    }
+
+    private void UpdateAmmoUI()
+    {
+        if (AmmoManagement.Instance)
+        {
+            AmmoManagement.Instance.UpdateAmmo(bulletLeft, magazineSize);
+        }
+        else if (ammoText)
+        {
+            ammoText.text = bulletLeft.ToString() + "/" + magazineSize.ToString();
+        }
     }
 
     private void TriggerShootAnimation()
@@ -246,6 +377,55 @@ public class Weapon : MonoBehaviour
         if (lifetime <= 0f) lifetime = 2f; // safe fallback
 
         Destroy(effect, lifetime);
+    }
+
+    private float lastEmptyMagPlayTime;
+    private const float emptyMagCooldown = 0.2f; // avoid spamming the click sound every frame
+
+    private void PlayEmptyMagSoundIfAvailable()
+    {
+        if (SoundManager.Instance == null) return;
+        var src = SoundManager.Instance.emptyMagazineSound;
+        if (!src) return;
+
+        // rate-limit
+        if (Time.time - lastEmptyMagPlayTime < emptyMagCooldown) return;
+        lastEmptyMagPlayTime = Time.time;
+
+        var clip = src.clip;
+        if (!clip) return;
+
+        Vector3 playPosition = bulletSpawn ? bulletSpawn.position : transform.position;
+        if (src.isActiveAndEnabled && src.gameObject.activeInHierarchy)
+        {
+            if (bulletSpawn) src.transform.position = playPosition;
+            src.PlayOneShot(clip);
+        }
+        else
+        {
+            AudioSource.PlayClipAtPoint(clip, playPosition, Mathf.Clamp01(src.volume));
+        }
+    }
+
+    private void PlayReloadSoundIfAvailable()
+    {
+        if (SoundManager.Instance == null) return;
+        var src = SoundManager.Instance.reloadSound1911;
+        if (!src) return;
+
+        var clip = src.clip;
+        if (!clip) return;
+
+        Vector3 playPosition = bulletSpawn ? bulletSpawn.position : transform.position;
+        if (src.isActiveAndEnabled && src.gameObject.activeInHierarchy)
+        {
+            if (bulletSpawn) src.transform.position = playPosition;
+            src.PlayOneShot(clip);
+        }
+        else
+        {
+            AudioSource.PlayClipAtPoint(clip, playPosition, Mathf.Clamp01(src.volume));
+        }
     }
 
     private Vector3 CalculateDirectionWithSpread()
