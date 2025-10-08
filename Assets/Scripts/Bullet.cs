@@ -19,13 +19,23 @@ public class Bullet : MonoBehaviour
 
             CreateBulletImpactEffect(objectWeHit);
 
-
             Destroy(gameObject);
         }
+        
         if (objectWeHit.gameObject.CompareTag("Beer"))
         {
             print("hit a beer");
             objectWeHit.gameObject.GetComponent<BeerBottle>().Shatter();
+        }
+        
+        // Check if we hit an enemy
+        SimpleEnemy enemy = objectWeHit.gameObject.GetComponent<SimpleEnemy>();
+        if (enemy != null)
+        {
+            print("hit enemy: " + objectWeHit.gameObject.name);
+            enemy.TakeDamage(25f); // Deal 25 damage to enemy
+            CreateBulletImpactEffect(objectWeHit);
+            Destroy(gameObject);
         }
 
     }
