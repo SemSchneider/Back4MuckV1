@@ -17,6 +17,7 @@ public class PlayerHealth : MonoBehaviour
     public float respawnDelay = 3f;
     
     private bool isDead = false;
+    private bool warnedMissingHealthBar = false;
     
     void Start()
     {
@@ -26,6 +27,16 @@ public class PlayerHealth : MonoBehaviour
         // Hide death screen if it exists
         if (deathScreen != null)
             deathScreen.SetActive(false);
+
+        // Runtime guidance: warn clearly if UI bindings are missing
+        if (healthBar == null)
+        {
+            Debug.LogWarning("PlayerHealth: 'healthBar' is not assigned. Add a Slider on your HUD Canvas and assign it to PlayerHealth.healthBar.", this);
+        }
+        if (healthText == null)
+        {
+            Debug.Log("PlayerHealth: 'healthText' is not assigned (optional). Assign a TMP_Text if you want numeric health.", this);
+        }
     }
     
     public void TakeDamage(float damage)
@@ -64,6 +75,11 @@ public class PlayerHealth : MonoBehaviour
         if (healthBar != null)
         {
             healthBar.value = currentHealth / maxHealth;
+        }
+        else if (!warnedMissingHealthBar)
+        {
+            warnedMissingHealthBar = true;
+            Debug.LogWarning("PlayerHealth: healthBar Slider reference is missing. The health UI will not update until it is assigned.", this);
         }
         
         // Update health text
