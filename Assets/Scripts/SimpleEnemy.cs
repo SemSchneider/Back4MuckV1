@@ -58,6 +58,30 @@ public class SimpleEnemy : MonoBehaviour
             rb.isKinematic = true; // Prevents physics interference
             rb.useGravity = false; // NavMesh handles movement
         }
+
+        // Calibrate agent vertical placement so the enemy sits on the NavMesh
+        if (agent != null)
+        {
+            var capsule = GetComponent<CapsuleCollider>();
+            if (capsule != null)
+            {
+                // Ensure agent size is at least collider size
+                agent.height = Mathf.Max(agent.height, capsule.height);
+                agent.radius = Mathf.Max(agent.radius, capsule.radius);
+
+                // If pivot is at center (capsule.center.y ≈ 0), offset should be half height
+                // General formula to bring collider bottom to NavMesh surface
+                agent.baseOffset = Mathf.Max(0f, (capsule.height * 0.5f) - capsule.center.y);
+            }
+
+            // Snap onto NavMesh at start to avoid half-sinking from import pivots
+            if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+            {
+                Vector3 snapped = hit.position;
+                snapped.y += agent.baseOffset;
+                transform.position = snapped;
+            }
+        }
     }
     
     void Update()
