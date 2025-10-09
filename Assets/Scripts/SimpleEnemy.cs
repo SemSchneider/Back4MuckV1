@@ -4,12 +4,20 @@ using UnityEngine.AI;
 public class SimpleEnemy : MonoBehaviour
 {
     [Header("Enemy Settings")]
+    public float maxHealth = 100f;
     public float health = 100f;
     public float moveSpeed = 3.5f;
     public float detectionRange = 10f;
     public float attackRange = 2f;
     public float attackDamage = 25f;
     public float attackCooldown = 1.5f;
+    public bool stopPushingAtAttackRange = true;
+
+	public enum DeathBehavior { Instant, TimedDelay }
+	[Header("Death Settings")]
+	public DeathBehavior deathBehavior = DeathBehavior.TimedDelay;
+    public float deathDestroyDelay = 0.5f;
+    public bool hideVisualsOnDeath = true;
     
     [Header("Components")]
     public Transform player;
@@ -27,6 +35,8 @@ public class SimpleEnemy : MonoBehaviour
     
     void Start()
     {
+        // Initialize health from maxHealth at start
+        health = Mathf.Clamp(maxHealth, 1f, Mathf.Infinity);
         // Find player if not assigned
         if (player == null)
         {
@@ -45,7 +55,7 @@ public class SimpleEnemy : MonoBehaviour
         if (agent != null)
         {
             agent.speed = moveSpeed;
-            agent.stoppingDistance = attackRange - 0.5f; // Stop slightly before attack range
+            agent.stoppingDistance = Mathf.Max(0f, attackRange - 0.5f); // Stop slightly before attack range
             agent.acceleration = 8f; // Faster acceleration
             agent.angularSpeed = 120f; // Faster turning
             agent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
@@ -108,7 +118,15 @@ public class SimpleEnemy : MonoBehaviour
             {
                 // Stop moving and attack
                 if (agent != null && agent.isActiveAndEnabled)
+                {
+                    if (stopPushingAtAttackRange)
+                    {
+                        agent.isStopped = true;
+                    }
+                    agent.ResetPath();
+                    agent.velocity = Vector3.zero;
                     agent.SetDestination(transform.position);
+                }
                     
                 if (animator != null)
                     animator.SetBool(WALK_PARAM, false);
@@ -124,6 +142,7 @@ public class SimpleEnemy : MonoBehaviour
                 // Move towards player
                 if (agent != null && agent.isActiveAndEnabled)
                 {
+                    agent.isStopped = false;
                     agent.SetDestination(player.position);
                     if (animator != null)
                         animator.SetBool(WALK_PARAM, true);
@@ -134,7 +153,11 @@ public class SimpleEnemy : MonoBehaviour
         {
             // Player not in range, stop moving
             if (agent != null && agent.isActiveAndEnabled)
+            {
+                agent.isStopped = false;
                 agent.SetDestination(transform.position);
+                agent.velocity = Vector3.zero;
+            }
             if (animator != null)
                 animator.SetBool(WALK_PARAM, false);
         }
@@ -206,7 +229,12 @@ public class SimpleEnemy : MonoBehaviour
         
         // Stop movement
         if (agent != null)
+        {
+            agent.isStopped = true;
+            agent.ResetPath();
+            agent.velocity = Vector3.zero;
             agent.enabled = false;
+        }
             
         // Trigger death animation
         if (animator != null)
@@ -216,10 +244,34 @@ public class SimpleEnemy : MonoBehaviour
         Collider col = GetComponent<Collider>();
         if (col != null)
             col.enabled = false;
-        
-        // Destroy after a delay (adjust based on death animation length)
-        Destroy(gameObject, 3f);
-        
+
+        // Optionally hide visuals immediately (keeps gameplay snappy)
+        if (hideVisualsOnDeath)
+        {
+            var renderers = GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                renderers[i].enabled = false;
+            }
+
+            // Hide any world-space UI under this enemy (health bars, etc.)
+            var canvases = GetComponentsInChildren<Canvas>(true);
+            for (int i = 0; i < canvases.Length; i++)
+            {
+                canvases[i].enabled = false;
+            }
+        }
+
+        // Destroy behavior
+        if (deathBehavior == DeathBehavior.Instant)
+        {
+            Destroy(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject, Mathf.Max(0f, deathDestroyDelay));
+        }
+
         Debug.Log("Enemy died!");
     }
     
