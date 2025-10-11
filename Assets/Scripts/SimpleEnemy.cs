@@ -27,6 +27,13 @@ public class SimpleEnemy : MonoBehaviour
     private float lastAttackTime;
     private bool isDead = false;
     private bool isAttacking = false;
+    private bool hasWalkParam = false;
+    private bool hasAttackParam = false;
+    private bool hasDeathParam = false;
+    
+    [Header("Animator Runtime Settings")]
+    public bool forceAnimatorAlwaysAnimate = true;
+    public bool disableAnimatorRootMotion = true;
     
     // Animation parameter names
     private const string WALK_PARAM = "IsWalking";
@@ -50,6 +57,49 @@ public class SimpleEnemy : MonoBehaviour
             agent = GetComponent<NavMeshAgent>();
         if (animator == null)
             animator = GetComponent<Animator>();
+        if (animator == null)
+            animator = GetComponentInChildren<Animator>();
+
+        // Cache animator parameter availability and warn if missing
+        if (animator == null)
+        {
+            Debug.LogWarning("SimpleEnemy: No Animator found on this GameObject or its children. Animations will not play.");
+        }
+        else
+        {
+            // Enforce safe runtime settings for spawned prefabs
+            if (forceAnimatorAlwaysAnimate)
+                animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            if (disableAnimatorRootMotion)
+                animator.applyRootMotion = false;
+            animator.enabled = true;
+            animator.speed = 1f;
+            if (animator.layerCount > 0)
+                animator.SetLayerWeight(0, 1f);
+
+            var controllerName = animator.runtimeAnimatorController != null ? animator.runtimeAnimatorController.name : "<None>";
+            Debug.Log($"SimpleEnemy: Animator='{animator.name}', Controller='{controllerName}' on '{name}'");
+
+            // Log initial state for diagnostics
+            if (animator.layerCount > 0)
+            {
+                var st = animator.GetCurrentAnimatorStateInfo(0);
+                Debug.Log($"SimpleEnemy: Initial state normalizedTime={st.normalizedTime:F2} hash={st.shortNameHash} on '{name}'");
+            }
+
+            hasWalkParam = animator.AnimatorHasParameter(WALK_PARAM, AnimatorControllerParameterType.Bool);
+            hasAttackParam = animator.AnimatorHasParameter(ATTACK_PARAM, AnimatorControllerParameterType.Trigger);
+            hasDeathParam = animator.AnimatorHasParameter(DEATH_PARAM, AnimatorControllerParameterType.Trigger);
+
+            if (!hasWalkParam)
+                Debug.LogWarning($"SimpleEnemy: Animator missing Bool parameter '{WALK_PARAM}'. Walking state won't switch.");
+            if (!hasAttackParam)
+                Debug.LogWarning($"SimpleEnemy: Animator missing Trigger parameter '{ATTACK_PARAM}'. Attack animation won't play.");
+            if (!hasDeathParam)
+                Debug.LogWarning($"SimpleEnemy: Animator missing Trigger parameter '{DEATH_PARAM}'. Death animation won't play.");
+            if (animator.runtimeAnimatorController == null)
+                Debug.LogWarning("SimpleEnemy: Animator has no Controller assigned. Assign your Zombie.controller (or equivalent).");
+        }
             
         // Configure NavMesh Agent
         if (agent != null)
@@ -129,7 +179,10 @@ public class SimpleEnemy : MonoBehaviour
                 }
                     
                 if (animator != null)
-                    animator.SetBool(WALK_PARAM, false);
+                {
+                    if (hasWalkParam)
+                        animator.SetBool(WALK_PARAM, false);
+                }
                 
                 // Attack if cooldown is over
                 if (Time.time - lastAttackTime >= attackCooldown && !isAttacking)
@@ -145,7 +198,10 @@ public class SimpleEnemy : MonoBehaviour
                     agent.isStopped = false;
                     agent.SetDestination(player.position);
                     if (animator != null)
-                        animator.SetBool(WALK_PARAM, true);
+                    {
+                        if (hasWalkParam)
+                            animator.SetBool(WALK_PARAM, true);
+                    }
                 }
             }
         }
@@ -159,7 +215,10 @@ public class SimpleEnemy : MonoBehaviour
                 agent.velocity = Vector3.zero;
             }
             if (animator != null)
-                animator.SetBool(WALK_PARAM, false);
+            {
+                if (hasWalkParam)
+                    animator.SetBool(WALK_PARAM, false);
+            }
         }
     }
     
@@ -170,7 +229,10 @@ public class SimpleEnemy : MonoBehaviour
         
         // Trigger attack animation
         if (animator != null)
-            animator.SetTrigger(ATTACK_PARAM);
+        {
+            if (hasAttackParam)
+                animator.SetTrigger(ATTACK_PARAM);
+        }
         
         // Deal damage to player (check if player is still in range)
         if (player != null)
@@ -238,7 +300,10 @@ public class SimpleEnemy : MonoBehaviour
             
         // Trigger death animation
         if (animator != null)
-            animator.SetTrigger(DEATH_PARAM);
+        {
+            if (hasDeathParam)
+                animator.SetTrigger(DEATH_PARAM);
+        }
         
         // Disable collider to prevent further interactions
         Collider col = GetComponent<Collider>();
@@ -296,5 +361,22 @@ public class SimpleEnemy : MonoBehaviour
                 Gizmos.DrawLine(transform.position, player.position);
             }
         }
+    }
+}
+
+// Local helpers
+static class SimpleEnemyAnimatorExtensions
+{
+    public static bool AnimatorHasParameter(this Animator animator, string paramName, AnimatorControllerParameterType type)
+    {
+        if (animator == null || string.IsNullOrEmpty(paramName)) return false;
+        var parameters = animator.parameters;
+        for (int i = 0; i < parameters.Length; i++)
+        {
+            var p = parameters[i];
+            if (p.type == type && p.name == paramName)
+                return true;
+        }
+        return false;
     }
 }

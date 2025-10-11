@@ -28,6 +28,13 @@ public class EnemySpawner : MonoBehaviour
         // Start spawning enemies
         if (enemyPrefab != null)
         {
+            // Log prefab animator/controller to catch mismatches early
+            var prefabAnimator = enemyPrefab.GetComponentInChildren<Animator>(true);
+            string prefabAnimatorName = prefabAnimator != null ? prefabAnimator.name : "<None>";
+            string prefabControllerName = (prefabAnimator != null && prefabAnimator.runtimeAnimatorController != null)
+                ? prefabAnimator.runtimeAnimatorController.name : "<None>";
+            Debug.Log($"EnemySpawner: Using enemyPrefab='{enemyPrefab.name}', Animator='{prefabAnimatorName}', Controller='{prefabControllerName}'");
+
             spawnCoroutine = StartCoroutine(SpawnEnemies());
         }
         else
@@ -63,6 +70,27 @@ public class EnemySpawner : MonoBehaviour
             if (enemyScript != null)
             {
                 // Enemy will find player automatically, but we can set it here if needed
+            }
+            
+            // Enforce safe Animator settings and log actual controller on spawned instance
+            var enemyAnimator = newEnemy.GetComponentInChildren<Animator>(true);
+            if (enemyAnimator != null)
+            {
+                enemyAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                enemyAnimator.applyRootMotion = false;
+
+                if (enemyScript != null && enemyScript.animator == null)
+                {
+                    enemyScript.animator = enemyAnimator; // make reference explicit
+                }
+
+                string controllerName = enemyAnimator.runtimeAnimatorController != null
+                    ? enemyAnimator.runtimeAnimatorController.name : "<None>";
+                Debug.Log($"EnemySpawner: Spawned enemy '{newEnemy.name}' Animator='{enemyAnimator.name}' Controller='{controllerName}'");
+            }
+            else
+            {
+                Debug.LogWarning($"EnemySpawner: Spawned enemy '{newEnemy.name}' has no Animator in children.");
             }
             
             currentEnemyCount++;
