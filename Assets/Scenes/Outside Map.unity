@@ -270,6 +270,7 @@ GameObject:
   m_StaticEditorFlags: 0
   m_IsActive: 1
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
 --- !u!143 &139766768
 CharacterController:
@@ -303,11 +304,15 @@ CharacterController:
 =======
 --- !u!4 &81578421
 >>>>>>> Stashed changes
+=======
+--- !u!4 &81578421
+>>>>>>> Stashed changes
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
   m_GameObject: {fileID: 139766767}
@@ -322,6 +327,8 @@ Transform:
   m_LocalEulerAnglesHint: {x: 7.4870005, y: 97.276, z: 0}
 --- !u!114 &139766770
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
   m_GameObject: {fileID: 81578420}
@@ -356,7 +363,10 @@ GameObject:
   m_IsActive: 1
 --- !u!114 &107873843
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 MonoBehaviour:
@@ -371,6 +381,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
   controller: {fileID: 139766768}
   speed: 7
@@ -380,6 +391,11 @@ MonoBehaviour:
   sprintSpeed: 7
   gravity: -19.62
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
+=======
+  speed: 5
+  sprintSpeed: 7
+  gravity: -19.62
+>>>>>>> Stashed changes
 =======
   speed: 5
   sprintSpeed: 7
@@ -537,11 +553,15 @@ Transform:
   m_GameObject: {fileID: 201706614}
   serializedVersion: 2
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
 =======
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
+=======
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+>>>>>>> Stashed changes
 =======
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
 >>>>>>> Stashed changes
@@ -553,11 +573,15 @@ Transform:
   - {fileID: 996878108}
   - {fileID: 1193500419}
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
   m_Father: {fileID: 0}
 =======
   m_Father: {fileID: 894822543}
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
+=======
+  m_Father: {fileID: 894822543}
+>>>>>>> Stashed changes
 =======
   m_Father: {fileID: 894822543}
 >>>>>>> Stashed changes
@@ -569,11 +593,15 @@ PrefabInstance:
   m_Modification:
     serializedVersion: 3
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
     m_TransformParent: {fileID: 0}
 =======
     m_TransformParent: {fileID: 1088546202}
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
+=======
+    m_TransformParent: {fileID: 1088546202}
+>>>>>>> Stashed changes
 =======
     m_TransformParent: {fileID: 1088546202}
 >>>>>>> Stashed changes
@@ -1033,6 +1061,7 @@ GameObject:
   m_StaticEditorFlags: 0
   m_IsActive: 1
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
 --- !u!154 &1011112320
 TerrainCollider:
@@ -1101,11 +1130,15 @@ Terrain:
 =======
 --- !u!4 &1088546202
 >>>>>>> Stashed changes
+=======
+--- !u!4 &1088546202
+>>>>>>> Stashed changes
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
   m_GameObject: {fileID: 1011112319}
@@ -1117,6 +1150,8 @@ Transform:
   m_Children: []
   m_Father: {fileID: 894822543}
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
   m_GameObject: {fileID: 1088546201}
@@ -1133,7 +1168,10 @@ Transform:
   - {fileID: 723766480}
   m_Father: {fileID: 1516741552}
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1371,6 +1409,7 @@ Transform:
   m_GameObject: {fileID: 1151806831}
   serializedVersion: 2
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 50, y: 2.5, z: 78}
@@ -1381,6 +1420,8 @@ Transform:
 =======
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 40.21, y: 2.5, z: 27.0775}
   m_LocalScale: {x: 3.457145, y: 10, z: 20.047329}
@@ -1388,7 +1429,10 @@ Transform:
   m_Children: []
   m_Father: {fileID: 894822543}
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1645,11 +1689,15 @@ PrefabInstance:
   m_Modification:
     serializedVersion: 3
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
     m_TransformParent: {fileID: 0}
 =======
     m_TransformParent: {fileID: 1088546202}
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
+=======
+    m_TransformParent: {fileID: 1088546202}
+>>>>>>> Stashed changes
 =======
     m_TransformParent: {fileID: 1088546202}
 >>>>>>> Stashed changes
@@ -1829,6 +1877,7 @@ PrefabInstance:
   m_Modification:
     serializedVersion: 3
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
     m_TransformParent: {fileID: 0}
 =======
@@ -1863,6 +1912,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.y
       value: 2.762
       objectReference: {fileID: 0}
+=======
+    m_TransformParent: {fileID: 1516741552}
+    m_Modifications:
+>>>>>>> Stashed changes
 =======
     m_TransformParent: {fileID: 1516741552}
     m_Modifications:
@@ -1924,6 +1977,7 @@ PrefabInstance:
       value: PT_Wooden_Bridge_02
       objectReference: {fileID: 0}
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     - target: {fileID: 7271632382185357321, guid: 46f8d17b9eeef754ebc1008196f84bdd, type: 3}
       propertyPath: m_LocalScale.y
       value: 1
@@ -1932,6 +1986,8 @@ PrefabInstance:
       propertyPath: m_LocalScale.z
       value: 1.5
       objectReference: {fileID: 0}
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
     m_RemovedComponents: []
@@ -2727,11 +2783,15 @@ PrefabInstance:
   m_Modification:
     serializedVersion: 3
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
     m_TransformParent: {fileID: 0}
 =======
     m_TransformParent: {fileID: 1088546202}
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
+=======
+    m_TransformParent: {fileID: 1088546202}
+>>>>>>> Stashed changes
 =======
     m_TransformParent: {fileID: 1088546202}
 >>>>>>> Stashed changes
@@ -2837,11 +2897,15 @@ PrefabInstance:
   m_Modification:
     serializedVersion: 3
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
     m_TransformParent: {fileID: 0}
 =======
     m_TransformParent: {fileID: 1088546202}
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
+=======
+    m_TransformParent: {fileID: 1088546202}
+>>>>>>> Stashed changes
 =======
     m_TransformParent: {fileID: 1088546202}
 >>>>>>> Stashed changes
@@ -2918,11 +2982,15 @@ PrefabInstance:
   m_Modification:
     serializedVersion: 3
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
     m_TransformParent: {fileID: 0}
 =======
     m_TransformParent: {fileID: 1088546202}
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
+=======
+    m_TransformParent: {fileID: 1088546202}
+>>>>>>> Stashed changes
 =======
     m_TransformParent: {fileID: 1088546202}
 >>>>>>> Stashed changes
@@ -3080,7 +3148,10 @@ Transform:
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
 --- !u!114 &1570689921
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 MonoBehaviour:
@@ -3105,6 +3176,7 @@ MonoBehaviour:
   m_LightCookieSize: {x: 1, y: 1}
   m_LightCookieOffset: {x: 0, y: 0}
   m_SoftShadowQuality: 0
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 --- !u!1 &1589245842
 GameObject:
@@ -3276,6 +3348,8 @@ MonoBehaviour:
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
 --- !u!1001 &1590409431
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3283,11 +3357,15 @@ PrefabInstance:
   m_Modification:
     serializedVersion: 3
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
     m_TransformParent: {fileID: 0}
 =======
     m_TransformParent: {fileID: 1516741552}
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
+=======
+    m_TransformParent: {fileID: 1516741552}
+>>>>>>> Stashed changes
 =======
     m_TransformParent: {fileID: 1516741552}
 >>>>>>> Stashed changes
@@ -3345,6 +3423,7 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c2dcabc4d03cc9b4098225e59529d20d, type: 3}
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
 --- !u!1 &1626380779
@@ -3444,6 +3523,8 @@ Transform:
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
 --- !u!1 &1697539109
 GameObject:
   m_ObjectHideFlags: 0
@@ -3538,6 +3619,7 @@ Transform:
   m_Father: {fileID: 894822543}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
 --- !u!1 &1699032203
 GameObject:
@@ -3624,10 +3706,14 @@ Terrain:
 =======
 --- !u!4 &1706918410 stripped
 >>>>>>> Stashed changes
+=======
+--- !u!4 &1706918410 stripped
+>>>>>>> Stashed changes
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 2ec966d90911a454c9760fa28789a4f8, type: 3}
   m_PrefabInstance: {fileID: 1546470280}
   m_PrefabAsset: {fileID: 0}
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
   m_GameObject: {fileID: 1699032203}
@@ -3643,6 +3729,9 @@ Transform:
 =======
 --- !u!1 &1713315670
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
+=======
+--- !u!1 &1713315670
+>>>>>>> Stashed changes
 =======
 --- !u!1 &1713315670
 >>>>>>> Stashed changes
@@ -3667,6 +3756,7 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
   m_GameObject: {fileID: 1906367006}
@@ -3756,6 +3846,8 @@ Transform:
 =======
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
   m_GameObject: {fileID: 1713315670}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
@@ -3781,7 +3873,10 @@ Transform:
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &1925793931
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 GameObject:
@@ -3806,6 +3901,7 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
   m_GameObject: {fileID: 2092571622}
@@ -3866,6 +3962,8 @@ Terrain:
 =======
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
   m_GameObject: {fileID: 1925793931}
   m_Enabled: 1
   m_EditorHideFlags: 0
@@ -3875,7 +3973,10 @@ Terrain:
   ammoText: {fileID: 606282916}
 --- !u!4 &1925793933
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 Transform:
@@ -3884,11 +3985,15 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
   m_GameObject: {fileID: 2092571622}
 =======
   m_GameObject: {fileID: 1925793931}
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
+=======
+  m_GameObject: {fileID: 1925793931}
+>>>>>>> Stashed changes
 =======
   m_GameObject: {fileID: 1925793931}
 >>>>>>> Stashed changes
@@ -3899,11 +4004,15 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
   m_Father: {fileID: 894822543}
 =======
   m_Father: {fileID: 0}
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
+=======
+  m_Father: {fileID: 0}
+>>>>>>> Stashed changes
 =======
   m_Father: {fileID: 0}
 >>>>>>> Stashed changes
@@ -3942,6 +4051,7 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
   m_GameObject: {fileID: 2129354786}
@@ -4002,6 +4112,8 @@ Terrain:
 =======
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
   m_GameObject: {fileID: 2113244468}
   m_Enabled: 1
   m_EditorHideFlags: 0
@@ -4017,7 +4129,10 @@ Terrain:
   useRandomSpawnPoints: 1
 --- !u!4 &2113244470
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 Transform:
@@ -4026,11 +4141,15 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
   m_GameObject: {fileID: 2129354786}
 =======
   m_GameObject: {fileID: 2113244468}
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
+=======
+  m_GameObject: {fileID: 2113244468}
+>>>>>>> Stashed changes
 =======
   m_GameObject: {fileID: 2113244468}
 >>>>>>> Stashed changes
@@ -4041,11 +4160,15 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
   m_Father: {fileID: 894822543}
 =======
   m_Father: {fileID: 0}
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
+=======
+  m_Father: {fileID: 0}
+>>>>>>> Stashed changes
 =======
   m_Father: {fileID: 0}
 >>>>>>> Stashed changes
@@ -4118,11 +4241,15 @@ PrefabInstance:
   m_Modification:
     serializedVersion: 3
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
     m_TransformParent: {fileID: 0}
 =======
     m_TransformParent: {fileID: 894822543}
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
+=======
+    m_TransformParent: {fileID: 894822543}
+>>>>>>> Stashed changes
 =======
     m_TransformParent: {fileID: 894822543}
 >>>>>>> Stashed changes
@@ -4182,11 +4309,14 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 516f5b8c780f050499e83e3e45588ae9, type: 3}
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
     m_AddedGameObjects:
@@ -4399,13 +4529,17 @@ PrefabInstance:
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 135d49930fe7fd94fa55cf38bd4c0b5b, type: 3}
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream:Assets/Polytope Studio/Lowpoly_Demos/Environment_Free/Environment_Free.unity
   - {fileID: 1413231522}
@@ -4424,6 +4558,8 @@ SceneRoots:
 =======
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
   - {fileID: 1570689920}
   - {fileID: 894822543}
   - {fileID: 107873846}
@@ -4434,6 +4570,9 @@ SceneRoots:
   - {fileID: 2113244470}
   - {fileID: 1424483861}
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes:Assets/Scenes/Outside Map.unity
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
