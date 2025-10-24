@@ -21,6 +21,10 @@ public class Weapon : MonoBehaviour
     public Transform bulletSpawn;
     public float bulletVelocity = 30f;
     public float bulletPrefabLifeTime = 3f;
+    [Tooltip("Layers considered for aiming raycast (e.g., exclude Player/Weapon)")]
+    public LayerMask aimMask = ~0; // default: Everything
+    [Tooltip("Max distance to aim toward when nothing is hit by raycast")]
+    public float maxAimDistance = 100f;
 
     public GameObject muzzleFlashEffectPrefab;
     public Animator weaponAnimator;
@@ -275,7 +279,8 @@ public class Weapon : MonoBehaviour
         }
         else
         {
-            rb.AddForce(dir * bulletVelocity, ForceMode.Impulse);
+            // Use direct velocity for consistent projectile speed regardless of mass/impulse
+            rb.linearVelocity = dir * bulletVelocity;
         }
 
         if (bulletPrefabLifeTime > 0f) StartCoroutine(DestroyBulletAfterTime(bullet, bulletPrefabLifeTime));
@@ -497,16 +502,19 @@ public class Weapon : MonoBehaviour
         if (!mainCamera) return transform.forward;
 
         Ray ray = mainCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        Vector3 targetPoint = Physics.Raycast(ray, out RaycastHit hit)
+        Vector3 targetPoint = Physics.Raycast(ray, out RaycastHit hit, maxAimDistance, aimMask, QueryTriggerInteraction.Ignore)
             ? hit.point
-            : ray.GetPoint(75f);
+            : ray.GetPoint(maxAimDistance);
 
         Vector3 baseDir = (targetPoint - bulletSpawn.position).normalized;
+        if (spreadIntensity <= 0f)
+        {
+            return baseDir;
+        }
 
         float x = Random.Range(-spreadIntensity, spreadIntensity);
         float y = Random.Range(-spreadIntensity, spreadIntensity);
         Vector3 spread = mainCamera.transform.right * x + mainCamera.transform.up * y;
-
         return (baseDir + spread).normalized;
     }
 
