@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.AI;
+using System.Collections;
 
 public class SimpleEnemy : MonoBehaviour
 {
@@ -79,12 +80,33 @@ public class SimpleEnemy : MonoBehaviour
 
             var controllerName = animator.runtimeAnimatorController != null ? animator.runtimeAnimatorController.name : "<None>";
             Debug.Log($"SimpleEnemy: Animator='{animator.name}', Controller='{controllerName}' on '{name}'");
+            
+            // Force reset animator state for spawned enemies
+            if (animator.runtimeAnimatorController != null)
+            {
+                animator.Rebind();
+                animator.Update(0f);
+                Debug.Log($"SimpleEnemy: Forced animator rebind on '{name}'");
+                
+                // Additional setup for spawned enemies
+                StartCoroutine(DelayedAnimatorInitialization());
+            }
 
             // Log initial state for diagnostics
             if (animator.layerCount > 0)
             {
                 var st = animator.GetCurrentAnimatorStateInfo(0);
                 Debug.Log($"SimpleEnemy: Initial state normalizedTime={st.normalizedTime:F2} hash={st.shortNameHash} on '{name}'");
+                
+                // Test if animator can transition properly
+                if (hasWalkParam)
+                {
+                    animator.SetBool(WALK_PARAM, true);
+                    animator.Update(0f);
+                    var walkState = animator.GetCurrentAnimatorStateInfo(0);
+                    Debug.Log($"SimpleEnemy: After setting walk=true, state hash={walkState.shortNameHash} on '{name}'");
+                    animator.SetBool(WALK_PARAM, false);
+                }
             }
 
             hasWalkParam = animator.AnimatorHasParameter(WALK_PARAM, AnimatorControllerParameterType.Bool);
@@ -150,6 +172,12 @@ public class SimpleEnemy : MonoBehaviour
         
         if (player == null) return;
         
+        // Continuously ensure walking animation loops while moving
+        if (animator != null && hasWalkParam && animator.GetBool(WALK_PARAM))
+        {
+            EnsureWalkingAnimationLoops();
+        }
+        
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
         
         // Check if player is in detection range
@@ -200,7 +228,14 @@ public class SimpleEnemy : MonoBehaviour
                     if (animator != null)
                     {
                         if (hasWalkParam)
+                        {
                             animator.SetBool(WALK_PARAM, true);
+                            // Ensure walking animation loops properly
+                            EnsureWalkingAnimationLoops();
+                        }
+                        
+                        // Force animator update for spawned enemies
+                        animator.Update(0f);
                     }
                 }
             }
@@ -305,26 +340,19 @@ public class SimpleEnemy : MonoBehaviour
                 animator.SetTrigger(DEATH_PARAM);
         }
         
+        // Snap zombie to ground level when dying (with small delay for animation)
+        StartCoroutine(SnapToGroundDelayed());
+        
         // Disable collider to prevent further interactions
         Collider col = GetComponent<Collider>();
         if (col != null)
             col.enabled = false;
 
-        // Optionally hide visuals immediately (keeps gameplay snappy)
+        // Hide visuals after death animation finishes
         if (hideVisualsOnDeath)
         {
-            var renderers = GetComponentsInChildren<Renderer>(true);
-            for (int i = 0; i < renderers.Length; i++)
-            {
-                renderers[i].enabled = false;
-            }
-
-            // Hide any world-space UI under this enemy (health bars, etc.)
-            var canvases = GetComponentsInChildren<Canvas>(true);
-            for (int i = 0; i < canvases.Length; i++)
-            {
-                canvases[i].enabled = false;
-            }
+            // Wait for death animation to play before hiding
+            StartCoroutine(HideAfterDeathAnimation());
         }
 
         // Destroy behavior
@@ -338,6 +366,168 @@ public class SimpleEnemy : MonoBehaviour
         }
 
         Debug.Log("Enemy died!");
+    }
+    
+    // Coroutine to hide visuals after death animation
+    System.Collections.IEnumerator HideAfterDeathAnimation()
+    {
+        // Wait for death animation to finish (adjust time as needed)
+        yield return new WaitForSeconds(2f);
+        
+        var renderers = GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            renderers[i].enabled = false;
+        }
+
+        // Hide any world-space UI under this enemy (health bars, etc.)
+        var canvases = GetComponentsInChildren<Canvas>(true);
+        for (int i = 0; i < canvases.Length; i++)
+        {
+            canvases[i].enabled = false;
+        }
+    }
+    
+    // Coroutine to snap zombie to ground with delay
+    System.Collections.IEnumerator SnapToGroundDelayed()
+    {
+        // Wait for death animation to play for 1 second
+        yield return new WaitForSeconds(1f);
+        StartCoroutine(SmoothSnapToGround());
+    }
+    
+    // Smooth coroutine to gradually move zombie to ground
+    System.Collections.IEnumerator SmoothSnapToGround()
+    {
+        Vector3 startPosition = transform.position;
+        Vector3 targetPosition = startPosition;
+        
+        // Find ground level
+        RaycastHit hit;
+        if (Physics.Raycast(transform.position + Vector3.up, Vector3.down, out hit, 10f))
+        {
+            targetPosition.y = hit.point.y;
+            Debug.Log($"Smoothly moving zombie to ground at Y: {hit.point.y}");
+        }
+        else
+        {
+            // Fallback: try to find NavMesh ground
+            if (NavMesh.SamplePosition(transform.position, out NavMeshHit navHit, 5f, NavMesh.AllAreas))
+            {
+                targetPosition.y = navHit.position.y;
+                Debug.Log($"Smoothly moving zombie to NavMesh ground at Y: {navHit.position.y}");
+            }
+            else
+            {
+                // No ground found, don't move
+                yield break;
+            }
+        }
+        
+        // Smoothly move to ground over 0.5 seconds
+        float duration = 0.5f;
+        float elapsed = 0f;
+        
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            
+            // Use smooth step for more natural movement
+            t = t * t * (3f - 2f * t);
+            
+            transform.position = Vector3.Lerp(startPosition, targetPosition, t);
+            yield return null;
+        }
+        
+        // Ensure final position is exact
+        transform.position = targetPosition;
+        Debug.Log("Zombie smoothly moved to ground");
+    }
+    
+    // Delayed animator initialization for spawned enemies
+    System.Collections.IEnumerator DelayedAnimatorInitialization()
+    {
+        // Wait a few frames for full initialization
+        yield return new WaitForEndOfFrame();
+        yield return new WaitForEndOfFrame();
+        
+        if (animator != null)
+        {
+            // Force another rebind and update
+            animator.Rebind();
+            animator.Update(0f);
+            
+            // Ensure proper initial state
+            animator.Play("Armature|Idle", 0, 0f);
+            
+            // Test all parameters
+            Debug.Log($"SimpleEnemy: Delayed init - Testing animator parameters on '{name}'");
+            if (hasWalkParam)
+            {
+                animator.SetBool(WALK_PARAM, false);
+                Debug.Log("  - Set IsWalking to false");
+            }
+            if (hasAttackParam)
+            {
+                Debug.Log("  - Attack parameter available");
+            }
+            if (hasDeathParam)
+            {
+                Debug.Log("  - Death parameter available");
+            }
+            
+            Debug.Log($"SimpleEnemy: Delayed animator initialization completed for '{name}'");
+        }
+    }
+    
+    // Method to ensure walking animation loops properly
+    void EnsureWalkingAnimationLoops()
+    {
+        if (animator != null && hasWalkParam)
+        {
+            // Get current walking state info
+            var stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+            
+            // Check if we're in the walking state and if it's near the end
+            if (stateInfo.IsName("Armature|Walk"))
+            {
+                // If animation is near the end (90% complete), reset it to loop
+                if (stateInfo.normalizedTime >= 0.9f)
+                {
+                    animator.Play("Armature|Walk", 0, 0f);
+                    Debug.Log("Reset walking animation to loop");
+                }
+            }
+        }
+    }
+    
+    // Method to snap zombie to ground level (instant version)
+    void SnapToGround()
+    {
+        // Cast a ray downward to find the ground
+        RaycastHit hit;
+        if (Physics.Raycast(transform.position + Vector3.up, Vector3.down, out hit, 10f))
+        {
+            // Move the zombie to the ground level
+            Vector3 newPosition = transform.position;
+            newPosition.y = hit.point.y;
+            transform.position = newPosition;
+            
+            Debug.Log($"Snapped zombie to ground at Y: {hit.point.y}");
+        }
+        else
+        {
+            // Fallback: try to find NavMesh ground
+            if (NavMesh.SamplePosition(transform.position, out NavMeshHit navHit, 5f, NavMesh.AllAreas))
+            {
+                Vector3 newPosition = transform.position;
+                newPosition.y = navHit.position.y;
+                transform.position = newPosition;
+                
+                Debug.Log($"Snapped zombie to NavMesh ground at Y: {navHit.position.y}");
+            }
+        }
     }
     
     // Visual debugging
