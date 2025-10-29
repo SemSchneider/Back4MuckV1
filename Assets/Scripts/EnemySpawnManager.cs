@@ -63,7 +63,8 @@ public class EnemySpawnManager : MonoBehaviour
         if (NightManager.Instance != null)
         {
             NightManager.Instance.OnNightStarted.AddListener(OnNightStarted);
-            LogDebug("Subscribed to NightManager.OnNightStarted");
+            NightManager.Instance.OnDayStarted.AddListener(OnDayStarted);
+            LogDebug("Subscribed to NightManager events");
         }
         else
         {
@@ -74,25 +75,26 @@ public class EnemySpawnManager : MonoBehaviour
     private void Start()
     {
         // Retry NightManager subscription if it wasn't available in Awake
-        if (NightManager.Instance != null && !isSpawning)
+        if (NightManager.Instance != null)
         {
             NightManager.Instance.OnNightStarted.AddListener(OnNightStarted);
-            LogDebug("Successfully subscribed to NightManager.OnNightStarted in Start()");
+            NightManager.Instance.OnDayStarted.AddListener(OnDayStarted);
+            LogDebug("Successfully subscribed to NightManager events in Start()");
         }
-        
+
         // Validate spawn point group
         if (spawnPointGroup == null)
         {
             LogDebug("No SpawnPointGroup assigned - searching for one in scene");
             spawnPointGroup = FindObjectOfType<SpawnPointGroup>();
-            
+
             if (spawnPointGroup == null)
             {
                 Debug.LogError("EnemySpawnManager: No SpawnPointGroup found in scene!");
                 return;
             }
         }
-        
+
         LogDebug($"EnemySpawnManager initialized with {spawnPointGroup.PointCount} spawn points");
     }
     
@@ -102,33 +104,34 @@ public class EnemySpawnManager : MonoBehaviour
     /// <param name="nightNumber">The night number that started</param>
     private void OnNightStarted(int nightNumber)
     {
+        // Only spawn during night
         if (isSpawning)
         {
             LogDebug($"Night {nightNumber} started but already spawning - ignoring");
             return;
         }
-        
+
         currentNight = nightNumber;
-        
+
         if (useBudgetSystem)
         {
             // Calculate budget for this night
             int calculatedBudget = startBudget + (nightNumber - 1) * budgetPerNight;
             currentBudget = Mathf.Min(calculatedBudget, budgetCap);
             remainingBudget = currentBudget;
-            
+
             LogDebug($"Night {nightNumber} started - Budget: {currentBudget} (calculated: {calculatedBudget}, capped at {budgetCap})");
-            
+
             // Plan spawns based on budget
             PlanBudgetSpawns();
-            
+
             LogDebug($"Planned {spawnQueue.Count} enemies for {remainingBudget} remaining budget");
         }
         else
         {
             // Calculate how many enemies to spawn this night (legacy system)
             int linearCount = baseCount + (nightNumber - 1) * perNightIncrement;
-            
+
             if (useCurve)
             {
                 // Apply curve multiplier
@@ -141,16 +144,33 @@ public class EnemySpawnManager : MonoBehaviour
                 targetSpawnCount = linearCount;
                 LogDebug($"Night {nightNumber} - Linear calculation: {targetSpawnCount}");
             }
-            
+
             // Apply hard cap
             targetSpawnCount = Mathf.Min(targetSpawnCount, hardCap);
             spawnedThisNight = 0;
-            
+
             LogDebug($"Night {nightNumber} started - Target spawn count: {targetSpawnCount} (capped at {hardCap})");
         }
-        
+
         // Start spawning enemies
         StartSpawning();
+    }
+
+    /// <summary>
+    /// Called when a new day starts
+    /// </summary>
+    /// <param name="nightNumber">The night number that ended</param>
+    private void OnDayStarted(int nightNumber)
+    {
+        // Stop all spawning when day starts
+        StopSpawning();
+        // Despawn all remaining enemies in the scene
+        var enemies = GameObject.FindGameObjectsWithTag("Enemy");
+        foreach (var enemy in enemies)
+        {
+            Destroy(enemy);
+        }
+        LogDebug($"Day {nightNumber} started - Stopped all enemy spawning and despawned {enemies.Length} enemies");
     }
     
     /// <summary>

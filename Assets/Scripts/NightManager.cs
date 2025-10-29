@@ -1,11 +1,32 @@
 using UnityEngine;
 using UnityEngine.Events;
+using System.Collections;
 
 public class NightManager : MonoBehaviour
 {
+    private void Update()
+    {
+        // Manual skip for testing
+        if (Input.GetKeyDown(KeyCode.N))
+        {
+            StartNight();
+        }
+        if (Input.GetKeyDown(KeyCode.M))
+        {
+            StartDay();
+        }
+    }
     [Header("Night Settings")]
     [SerializeField] private int currentNight = 1;
     [SerializeField] private bool persistAcrossScenes = true;
+    [Header("Cycle Timing")]
+    [SerializeField] private float nightDuration = 10f; // seconds
+    [SerializeField] private float dayDuration = 5f; // seconds
+
+    private Coroutine cycleCoroutine;
+
+    [Header("Day/Night State")]
+    [SerializeField] private bool isNight = true;
     
     [Header("Events")]
     public UnityEvent<int> OnNightStarted;
@@ -20,6 +41,9 @@ public class NightManager : MonoBehaviour
         get => currentNight; 
         private set => currentNight = value; 
     }
+
+    // Public property for night state
+    public bool IsNight => isNight;
     
     private void Awake()
     {
@@ -27,16 +51,30 @@ public class NightManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            
             // Optional persistence across scenes
             if (persistAcrossScenes)
             {
                 DontDestroyOnLoad(gameObject);
             }
+            // Start automatic cycle
+            cycleCoroutine = StartCoroutine(RunCycle());
         }
         else
         {
             Destroy(gameObject);
+        }
+    }
+    /// <summary>
+    /// Coroutine to loop between day and night using Inspector durations
+    /// </summary>
+    public IEnumerator RunCycle()
+    {
+        while (true)
+        {
+            StartNight();
+            yield return new WaitForSeconds(nightDuration);
+            StartDay();
+            yield return new WaitForSeconds(dayDuration);
         }
     }
     
@@ -45,21 +83,19 @@ public class NightManager : MonoBehaviour
     /// </summary>
     public void StartNight()
     {
+        isNight = true;
         currentNight++;
         Debug.Log($"Night {currentNight} has started!");
-        
-        // Invoke the night started event
         OnNightStarted?.Invoke(currentNight);
     }
-    
+
     /// <summary>
-    /// Ends the current night and starts a new day
+    /// Starts a new day and ends the current night
     /// </summary>
-    public void EndNight()
+    public void StartDay()
     {
-        Debug.Log($"Night {currentNight} has ended! Day {currentNight} begins.");
-        
-        // Invoke the day started event
+        isNight = false;
+        Debug.Log($"Day {currentNight} has started!");
         OnDayStarted?.Invoke(currentNight);
     }
     
@@ -81,11 +117,12 @@ public class NightManager : MonoBehaviour
     }
     
     /// <summary>
-    /// Reset the night counter to 1
+    /// Reset the night counter to 1 and set to night
     /// </summary>
     public void ResetNight()
     {
         currentNight = 1;
+        isNight = true;
         Debug.Log("Night counter reset to 1");
     }
     
@@ -95,17 +132,15 @@ public class NightManager : MonoBehaviour
     /// <returns>Formatted night string</returns>
     public string GetNightString()
     {
-        return $"Night {currentNight}";
+        return isNight ? $"Night {currentNight}" : $"Day {currentNight}";
     }
     
     /// <summary>
-    /// Check if it's currently night time (you can extend this with time-based logic)
+    /// Check if it's currently night time
     /// </summary>
     /// <returns>True if it's night time</returns>
     public bool IsNightTime()
     {
-        // This is a placeholder - you can implement time-based logic here
-        // For example, check against a day/night cycle system
-        return true; // Default to night time for now
+        return isNight;
     }
 }

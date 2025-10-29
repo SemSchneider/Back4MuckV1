@@ -29,7 +29,8 @@ public class NightHUD : MonoBehaviour
         if (NightManager.Instance != null)
         {
             NightManager.Instance.OnNightStarted.AddListener(OnNightStarted);
-            LogDebug("Subscribed to NightManager.OnNightStarted");
+            NightManager.Instance.OnDayStarted.AddListener(OnDayStarted);
+            LogDebug("Subscribed to NightManager events");
         }
         else
         {
@@ -43,21 +44,22 @@ public class NightHUD : MonoBehaviour
         if (NightManager.Instance != null)
         {
             NightManager.Instance.OnNightStarted.AddListener(OnNightStarted);
-            LogDebug("Successfully subscribed to NightManager.OnNightStarted in Start()");
+            NightManager.Instance.OnDayStarted.AddListener(OnDayStarted);
+            LogDebug("Successfully subscribed to NightManager events in Start()");
         }
-        
+
         // Find EnemySpawnManager
-        spawnManager = FindObjectOfType<EnemySpawnManager>();
+        spawnManager = FindFirstObjectByType<EnemySpawnManager>();
         if (spawnManager == null)
         {
             Debug.LogWarning("NightHUD: EnemySpawnManager not found in scene!");
         }
-        
+
         // Initialize display with current night
         UpdateNightDisplay();
         UpdateEnemyDisplay();
         UpdateBudgetDisplay();
-        
+
         LogDebug("NightHUD initialized");
     }
     
@@ -68,12 +70,14 @@ public class NightHUD : MonoBehaviour
     private void OnNightStarted(int nightNumber)
     {
         LogDebug($"Night {nightNumber} started - updating HUD");
-        
-        // Update night display immediately
         UpdateNightDisplay();
-        
-        // Wait a frame for SpawnManager to compute counts, then update enemy display
         StartCoroutine(UpdateEnemyDisplayDelayed());
+    }
+
+    private void OnDayStarted(int nightNumber)
+    {
+        LogDebug($"Day {nightNumber} started - updating HUD");
+        UpdateNightDisplay();
     }
     
     /// <summary>
@@ -98,7 +102,8 @@ public class NightHUD : MonoBehaviour
     {
         if (nightNumberText != null && NightManager.Instance != null)
         {
-            nightNumberText.text = $"{nightPrefix}{NightManager.Instance.CurrentNight}";
+            string state = NightManager.Instance.IsNight ? "Night" : "Day";
+            nightNumberText.text = $"{state} {NightManager.Instance.CurrentNight}";
             LogDebug($"Updated night display: {nightNumberText.text}");
         }
         else if (nightNumberText == null)
