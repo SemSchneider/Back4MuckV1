@@ -18,8 +18,19 @@ public class Inventory : MonoBehaviour
 
         // spawn nieuwe
         currentWeapon = Instantiate(prefab, weaponHolder);
-        currentWeapon.transform.localPosition = Vector3.zero;
-        currentWeapon.transform.localRotation = Quaternion.identity;
+        
+        // Set proper weapon positioning
+        Weapon weapon = currentWeapon.GetComponent<Weapon>();
+        if (weapon != null)
+        {
+            weapon.SetEquippedPosition();
+        }
+        else
+        {
+            // Fallback for weapons without Weapon component
+            currentWeapon.transform.localPosition = Vector3.zero;
+            currentWeapon.transform.localRotation = Quaternion.identity;
+        }
 
         // ammo doorgeven
         Gun gun = currentWeapon.GetComponent<Gun>();
