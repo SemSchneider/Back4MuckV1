@@ -61,66 +61,57 @@ public class SimpleEnemy : MonoBehaviour
         if (animator == null)
             animator = GetComponentInChildren<Animator>();
 
-        // Cache animator parameter availability and warn if missing
+        // --- RUNTIME ANIMATOR CHECKS FOR CLONES ---
         if (animator == null)
         {
-            Debug.LogWarning("SimpleEnemy: No Animator found on this GameObject or its children. Animations will not play.");
+            Debug.LogWarning($"SimpleEnemy: No Animator found on '{name}' or its children. Animations will not play.");
         }
         else
         {
-            // Enforce safe runtime settings for spawned prefabs
+            // Ensure Animator is enabled
+            if (!animator.enabled)
+            {
+                animator.enabled = true;
+                Debug.LogWarning($"SimpleEnemy: Animator was disabled on '{name}', enabling it.");
+            }
+            // Always animate (important for runtime clones)
             if (forceAnimatorAlwaysAnimate)
                 animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            // Disable root motion if needed
             if (disableAnimatorRootMotion)
                 animator.applyRootMotion = false;
-            animator.enabled = true;
             animator.speed = 1f;
             if (animator.layerCount > 0)
                 animator.SetLayerWeight(0, 1f);
 
-            var controllerName = animator.runtimeAnimatorController != null ? animator.runtimeAnimatorController.name : "<None>";
-            Debug.Log($"SimpleEnemy: Animator='{animator.name}', Controller='{controllerName}' on '{name}'");
-            
-            // Force reset animator state for spawned enemies
-            if (animator.runtimeAnimatorController != null)
+            // Check Animator Controller assignment
+            if (animator.runtimeAnimatorController == null)
             {
+                Debug.LogWarning($"SimpleEnemy: Animator on '{name}' has no Controller assigned. Assign your Zombie.controller (or equivalent) in the prefab.");
+            }
+            else
+            {
+                var controllerName = animator.runtimeAnimatorController.name;
+                Debug.Log($"SimpleEnemy: Animator='{animator.name}', Controller='{controllerName}' on '{name}'");
+                // Force rebind for runtime clones
                 animator.Rebind();
                 animator.Update(0f);
                 Debug.Log($"SimpleEnemy: Forced animator rebind on '{name}'");
-                
                 // Additional setup for spawned enemies
                 StartCoroutine(DelayedAnimatorInitialization());
             }
 
-            // Log initial state for diagnostics
-            if (animator.layerCount > 0)
-            {
-                var st = animator.GetCurrentAnimatorStateInfo(0);
-                Debug.Log($"SimpleEnemy: Initial state normalizedTime={st.normalizedTime:F2} hash={st.shortNameHash} on '{name}'");
-                
-                // Test if animator can transition properly
-                if (hasWalkParam)
-                {
-                    animator.SetBool(WALK_PARAM, true);
-                    animator.Update(0f);
-                    var walkState = animator.GetCurrentAnimatorStateInfo(0);
-                    Debug.Log($"SimpleEnemy: After setting walk=true, state hash={walkState.shortNameHash} on '{name}'");
-                    animator.SetBool(WALK_PARAM, false);
-                }
-            }
-
+            // Cache animator parameter availability
             hasWalkParam = animator.AnimatorHasParameter(WALK_PARAM, AnimatorControllerParameterType.Bool);
             hasAttackParam = animator.AnimatorHasParameter(ATTACK_PARAM, AnimatorControllerParameterType.Trigger);
             hasDeathParam = animator.AnimatorHasParameter(DEATH_PARAM, AnimatorControllerParameterType.Trigger);
 
             if (!hasWalkParam)
-                Debug.LogWarning($"SimpleEnemy: Animator missing Bool parameter '{WALK_PARAM}'. Walking state won't switch.");
+                Debug.LogWarning($"SimpleEnemy: Animator missing Bool parameter '{WALK_PARAM}' on '{name}'. Walking state won't switch.");
             if (!hasAttackParam)
-                Debug.LogWarning($"SimpleEnemy: Animator missing Trigger parameter '{ATTACK_PARAM}'. Attack animation won't play.");
+                Debug.LogWarning($"SimpleEnemy: Animator missing Trigger parameter '{ATTACK_PARAM}' on '{name}'. Attack animation won't play.");
             if (!hasDeathParam)
-                Debug.LogWarning($"SimpleEnemy: Animator missing Trigger parameter '{DEATH_PARAM}'. Death animation won't play.");
-            if (animator.runtimeAnimatorController == null)
-                Debug.LogWarning("SimpleEnemy: Animator has no Controller assigned. Assign your Zombie.controller (or equivalent).");
+                Debug.LogWarning($"SimpleEnemy: Animator missing Trigger parameter '{DEATH_PARAM}' on '{name}'. Death animation won't play.");
         }
             
         // Configure NavMesh Agent
@@ -230,8 +221,17 @@ public class SimpleEnemy : MonoBehaviour
                         if (hasWalkParam)
                         {
                             animator.SetBool(WALK_PARAM, true);
+                            Debug.Log($"SimpleEnemy: Set {WALK_PARAM}=true on '{name}'");
+                            
+                            // Check if transition actually happened
+                            StartCoroutine(CheckAnimationTransition());
+                            
                             // Ensure walking animation loops properly
                             EnsureWalkingAnimationLoops();
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"SimpleEnemy: Cannot set {WALK_PARAM} - parameter not found on '{name}'");
                         }
                         
                         // Force animator update for spawned enemies
@@ -320,7 +320,7 @@ public class SimpleEnemy : MonoBehaviour
         }
     }
     
-    void Die()
+    public void Die()
     {
         isDead = true;
         
@@ -366,6 +366,24 @@ public class SimpleEnemy : MonoBehaviour
         }
 
         Debug.Log("Enemy died!");
+    }
+    
+    private void OnDestroy()
+    {
+        // Only register death if the application is playing (not during scene unload)
+        if (Application.isPlaying)
+        {
+            // Find and notify EnemySpawnManager of this enemy's death
+            EnemySpawnManager spawnManager = FindObjectOfType<EnemySpawnManager>();
+            if (spawnManager != null)
+            {
+                spawnManager.RegisterDeath();
+            }
+            else
+            {
+                Debug.LogWarning("SimpleEnemy: EnemySpawnManager not found when enemy died");
+            }
+        }
     }
     
     // Coroutine to hide visuals after death animation
@@ -478,6 +496,30 @@ public class SimpleEnemy : MonoBehaviour
             }
             
             Debug.Log($"SimpleEnemy: Delayed animator initialization completed for '{name}'");
+        }
+    }
+    
+    // Check if animation transition actually happened
+    System.Collections.IEnumerator CheckAnimationTransition()
+    {
+        yield return new WaitForSeconds(0.1f);
+        
+        if (animator != null)
+        {
+            var stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+            string currentState = stateInfo.IsName("Armature|Walk") ? "Walking" : 
+                                 stateInfo.IsName("Armature|Idle") ? "Idle" : 
+                                 stateInfo.IsName("Armature|Attack") ? "Attack" : 
+                                 stateInfo.IsName("Armature|Die") ? "Death" : "Unknown";
+            
+            Debug.Log($"SimpleEnemy: Animation check - Current state: {currentState} (normalizedTime: {stateInfo.normalizedTime:F2}) on '{name}'");
+            
+            // If still in idle when should be walking, force the transition
+            if (stateInfo.IsName("Armature|Idle") && hasWalkParam && animator.GetBool(WALK_PARAM))
+            {
+                Debug.LogWarning($"SimpleEnemy: Forcing walk transition on '{name}' - stuck in idle!");
+                animator.Play("Armature|Walk", 0, 0f);
+            }
         }
     }
     
