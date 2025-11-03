@@ -1,11 +1,16 @@
 using NUnit.Framework;
 using UnityEngine;
+using System.Collections;
 
 public class PlayerMovement : MonoBehaviour
 {
     private CharacterController controller;
-    public float speed = 12f;
-    public float sprintSpeed = 18f;
+    
+    [Header("Speed Settings")]
+    [SerializeField] private float baseSpeed = 12f;
+    [SerializeField] private float sprintSpeed = 18f;
+    private float currentSpeed;
+    private Coroutine speedMultiplierRoutine;
     public float gravity = -9.81f * 2;
     public float jumpHeight = 3f;
 
@@ -22,6 +27,35 @@ public class PlayerMovement : MonoBehaviour
     void Start()
     {
         controller = GetComponent<CharacterController>();
+        currentSpeed = baseSpeed; // Initialize current speed
+    }
+
+    public void ApplySpeedMultiplier(float multiplier, float duration)
+    {
+        if (duration <= 0f)
+        {
+            Debug.LogWarning("Trying to apply speed multiplier with duration <= 0", this);
+            return;
+        }
+
+        // If there's already a speed multiplier active, stop it
+        if (speedMultiplierRoutine != null)
+        {
+            StopCoroutine(speedMultiplierRoutine);
+        }
+
+        // Apply new multiplier
+        currentSpeed = baseSpeed * multiplier;
+        
+        // Start new timer
+        speedMultiplierRoutine = StartCoroutine(ResetSpeedAfterDelay(duration));
+    }
+
+    private IEnumerator ResetSpeedAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        currentSpeed = baseSpeed;
+        speedMultiplierRoutine = null;
     }
 
     // Update is called once per frame
@@ -39,7 +73,7 @@ public class PlayerMovement : MonoBehaviour
 		Vector3 move = transform.right * x + transform.forward * z;
 
 		// hold Left Shift to sprint while grounded
-		float appliedSpeed = (Input.GetKey(KeyCode.LeftShift) && isGrounded && (x != 0f || z != 0f)) ? sprintSpeed : speed;
+		float appliedSpeed = (Input.GetKey(KeyCode.LeftShift) && isGrounded && (x != 0f || z != 0f)) ? sprintSpeed : currentSpeed;
 		controller.Move(move * appliedSpeed * Time.deltaTime);
 
         if (Input.GetButtonDown("Jump") && isGrounded)
