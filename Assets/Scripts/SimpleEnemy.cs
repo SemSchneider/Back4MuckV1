@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.AI;
+using System.Collections;
 
 public class SimpleEnemy : MonoBehaviour
 {
@@ -27,6 +28,13 @@ public class SimpleEnemy : MonoBehaviour
     private float lastAttackTime;
     private bool isDead = false;
     private bool isAttacking = false;
+    private bool hasWalkParam = false;
+    private bool hasAttackParam = false;
+    private bool hasDeathParam = false;
+    
+    [Header("Animator Runtime Settings")]
+    public bool forceAnimatorAlwaysAnimate = true;
+    public bool disableAnimatorRootMotion = true;
     
     // Animation parameter names
     private const string WALK_PARAM = "IsWalking";
@@ -50,6 +58,61 @@ public class SimpleEnemy : MonoBehaviour
             agent = GetComponent<NavMeshAgent>();
         if (animator == null)
             animator = GetComponent<Animator>();
+        if (animator == null)
+            animator = GetComponentInChildren<Animator>();
+
+        // --- RUNTIME ANIMATOR CHECKS FOR CLONES ---
+        if (animator == null)
+        {
+            Debug.LogWarning($"SimpleEnemy: No Animator found on '{name}' or its children. Animations will not play.");
+        }
+        else
+        {
+            // Ensure Animator is enabled
+            if (!animator.enabled)
+            {
+                animator.enabled = true;
+                Debug.LogWarning($"SimpleEnemy: Animator was disabled on '{name}', enabling it.");
+            }
+            // Always animate (important for runtime clones)
+            if (forceAnimatorAlwaysAnimate)
+                animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            // Disable root motion if needed
+            if (disableAnimatorRootMotion)
+                animator.applyRootMotion = false;
+            animator.speed = 1f;
+            if (animator.layerCount > 0)
+                animator.SetLayerWeight(0, 1f);
+
+            // Check Animator Controller assignment
+            if (animator.runtimeAnimatorController == null)
+            {
+                Debug.LogWarning($"SimpleEnemy: Animator on '{name}' has no Controller assigned. Assign your Zombie.controller (or equivalent) in the prefab.");
+            }
+            else
+            {
+                var controllerName = animator.runtimeAnimatorController.name;
+                Debug.Log($"SimpleEnemy: Animator='{animator.name}', Controller='{controllerName}' on '{name}'");
+                // Force rebind for runtime clones
+                animator.Rebind();
+                animator.Update(0f);
+                Debug.Log($"SimpleEnemy: Forced animator rebind on '{name}'");
+                // Additional setup for spawned enemies
+                StartCoroutine(DelayedAnimatorInitialization());
+            }
+
+            // Cache animator parameter availability
+            hasWalkParam = animator.AnimatorHasParameter(WALK_PARAM, AnimatorControllerParameterType.Bool);
+            hasAttackParam = animator.AnimatorHasParameter(ATTACK_PARAM, AnimatorControllerParameterType.Trigger);
+            hasDeathParam = animator.AnimatorHasParameter(DEATH_PARAM, AnimatorControllerParameterType.Trigger);
+
+            if (!hasWalkParam)
+                Debug.LogWarning($"SimpleEnemy: Animator missing Bool parameter '{WALK_PARAM}' on '{name}'. Walking state won't switch.");
+            if (!hasAttackParam)
+                Debug.LogWarning($"SimpleEnemy: Animator missing Trigger parameter '{ATTACK_PARAM}' on '{name}'. Attack animation won't play.");
+            if (!hasDeathParam)
+                Debug.LogWarning($"SimpleEnemy: Animator missing Trigger parameter '{DEATH_PARAM}' on '{name}'. Death animation won't play.");
+        }
             
         // Configure NavMesh Agent
         if (agent != null)
@@ -100,6 +163,12 @@ public class SimpleEnemy : MonoBehaviour
         
         if (player == null) return;
         
+        // Continuously ensure walking animation loops while moving
+        if (animator != null && hasWalkParam && animator.GetBool(WALK_PARAM))
+        {
+            EnsureWalkingAnimationLoops();
+        }
+        
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
         
         // Check if player is in detection range
@@ -129,7 +198,10 @@ public class SimpleEnemy : MonoBehaviour
                 }
                     
                 if (animator != null)
-                    animator.SetBool(WALK_PARAM, false);
+                {
+                    if (hasWalkParam)
+                        animator.SetBool(WALK_PARAM, false);
+                }
                 
                 // Attack if cooldown is over
                 if (Time.time - lastAttackTime >= attackCooldown && !isAttacking)
@@ -145,7 +217,26 @@ public class SimpleEnemy : MonoBehaviour
                     agent.isStopped = false;
                     agent.SetDestination(player.position);
                     if (animator != null)
-                        animator.SetBool(WALK_PARAM, true);
+                    {
+                        if (hasWalkParam)
+                        {
+                            animator.SetBool(WALK_PARAM, true);
+                            Debug.Log($"SimpleEnemy: Set {WALK_PARAM}=true on '{name}'");
+                            
+                            // Check if transition actually happened
+                            StartCoroutine(CheckAnimationTransition());
+                            
+                            // Ensure walking animation loops properly
+                            EnsureWalkingAnimationLoops();
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"SimpleEnemy: Cannot set {WALK_PARAM} - parameter not found on '{name}'");
+                        }
+                        
+                        // Force animator update for spawned enemies
+                        animator.Update(0f);
+                    }
                 }
             }
         }
@@ -159,7 +250,10 @@ public class SimpleEnemy : MonoBehaviour
                 agent.velocity = Vector3.zero;
             }
             if (animator != null)
-                animator.SetBool(WALK_PARAM, false);
+            {
+                if (hasWalkParam)
+                    animator.SetBool(WALK_PARAM, false);
+            }
         }
     }
     
@@ -170,7 +264,10 @@ public class SimpleEnemy : MonoBehaviour
         
         // Trigger attack animation
         if (animator != null)
-            animator.SetTrigger(ATTACK_PARAM);
+        {
+            if (hasAttackParam)
+                animator.SetTrigger(ATTACK_PARAM);
+        }
         
         // Deal damage to player (check if player is still in range)
         if (player != null)
@@ -223,7 +320,7 @@ public class SimpleEnemy : MonoBehaviour
         }
     }
     
-    void Die()
+    public void Die()
     {
         isDead = true;
         
@@ -238,28 +335,24 @@ public class SimpleEnemy : MonoBehaviour
             
         // Trigger death animation
         if (animator != null)
-            animator.SetTrigger(DEATH_PARAM);
+        {
+            if (hasDeathParam)
+                animator.SetTrigger(DEATH_PARAM);
+        }
+        
+        // Snap zombie to ground level when dying (with small delay for animation)
+        StartCoroutine(SnapToGroundDelayed());
         
         // Disable collider to prevent further interactions
         Collider col = GetComponent<Collider>();
         if (col != null)
             col.enabled = false;
 
-        // Optionally hide visuals immediately (keeps gameplay snappy)
+        // Hide visuals after death animation finishes
         if (hideVisualsOnDeath)
         {
-            var renderers = GetComponentsInChildren<Renderer>(true);
-            for (int i = 0; i < renderers.Length; i++)
-            {
-                renderers[i].enabled = false;
-            }
-
-            // Hide any world-space UI under this enemy (health bars, etc.)
-            var canvases = GetComponentsInChildren<Canvas>(true);
-            for (int i = 0; i < canvases.Length; i++)
-            {
-                canvases[i].enabled = false;
-            }
+            // Wait for death animation to play before hiding
+            StartCoroutine(HideAfterDeathAnimation());
         }
 
         // Destroy behavior
@@ -273,6 +366,210 @@ public class SimpleEnemy : MonoBehaviour
         }
 
         Debug.Log("Enemy died!");
+    }
+    
+    private void OnDestroy()
+    {
+        // Only register death if the application is playing (not during scene unload)
+        if (Application.isPlaying)
+        {
+            // Find and notify EnemySpawnManager of this enemy's death
+            EnemySpawnManager spawnManager = FindObjectOfType<EnemySpawnManager>();
+            if (spawnManager != null)
+            {
+                spawnManager.RegisterDeath();
+            }
+            else
+            {
+                Debug.LogWarning("SimpleEnemy: EnemySpawnManager not found when enemy died");
+            }
+        }
+    }
+    
+    // Coroutine to hide visuals after death animation
+    System.Collections.IEnumerator HideAfterDeathAnimation()
+    {
+        // Wait for death animation to finish (adjust time as needed)
+        yield return new WaitForSeconds(2f);
+        
+        var renderers = GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            renderers[i].enabled = false;
+        }
+
+        // Hide any world-space UI under this enemy (health bars, etc.)
+        var canvases = GetComponentsInChildren<Canvas>(true);
+        for (int i = 0; i < canvases.Length; i++)
+        {
+            canvases[i].enabled = false;
+        }
+    }
+    
+    // Coroutine to snap zombie to ground with delay
+    System.Collections.IEnumerator SnapToGroundDelayed()
+    {
+        // Wait for death animation to play for 1 second
+        yield return new WaitForSeconds(1f);
+        StartCoroutine(SmoothSnapToGround());
+    }
+    
+    // Smooth coroutine to gradually move zombie to ground
+    System.Collections.IEnumerator SmoothSnapToGround()
+    {
+        Vector3 startPosition = transform.position;
+        Vector3 targetPosition = startPosition;
+        
+        // Find ground level
+        RaycastHit hit;
+        if (Physics.Raycast(transform.position + Vector3.up, Vector3.down, out hit, 10f))
+        {
+            targetPosition.y = hit.point.y;
+            Debug.Log($"Smoothly moving zombie to ground at Y: {hit.point.y}");
+        }
+        else
+        {
+            // Fallback: try to find NavMesh ground
+            if (NavMesh.SamplePosition(transform.position, out NavMeshHit navHit, 5f, NavMesh.AllAreas))
+            {
+                targetPosition.y = navHit.position.y;
+                Debug.Log($"Smoothly moving zombie to NavMesh ground at Y: {navHit.position.y}");
+            }
+            else
+            {
+                // No ground found, don't move
+                yield break;
+            }
+        }
+        
+        // Smoothly move to ground over 0.5 seconds
+        float duration = 0.5f;
+        float elapsed = 0f;
+        
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            
+            // Use smooth step for more natural movement
+            t = t * t * (3f - 2f * t);
+            
+            transform.position = Vector3.Lerp(startPosition, targetPosition, t);
+            yield return null;
+        }
+        
+        // Ensure final position is exact
+        transform.position = targetPosition;
+        Debug.Log("Zombie smoothly moved to ground");
+    }
+    
+    // Delayed animator initialization for spawned enemies
+    System.Collections.IEnumerator DelayedAnimatorInitialization()
+    {
+        // Wait a few frames for full initialization
+        yield return new WaitForEndOfFrame();
+        yield return new WaitForEndOfFrame();
+        
+        if (animator != null)
+        {
+            // Force another rebind and update
+            animator.Rebind();
+            animator.Update(0f);
+            
+            // Ensure proper initial state
+            animator.Play("Armature|Idle", 0, 0f);
+            
+            // Test all parameters
+            Debug.Log($"SimpleEnemy: Delayed init - Testing animator parameters on '{name}'");
+            if (hasWalkParam)
+            {
+                animator.SetBool(WALK_PARAM, false);
+                Debug.Log("  - Set IsWalking to false");
+            }
+            if (hasAttackParam)
+            {
+                Debug.Log("  - Attack parameter available");
+            }
+            if (hasDeathParam)
+            {
+                Debug.Log("  - Death parameter available");
+            }
+            
+            Debug.Log($"SimpleEnemy: Delayed animator initialization completed for '{name}'");
+        }
+    }
+    
+    // Check if animation transition actually happened
+    System.Collections.IEnumerator CheckAnimationTransition()
+    {
+        yield return new WaitForSeconds(0.1f);
+        
+        if (animator != null)
+        {
+            var stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+            string currentState = stateInfo.IsName("Armature|Walk") ? "Walking" : 
+                                 stateInfo.IsName("Armature|Idle") ? "Idle" : 
+                                 stateInfo.IsName("Armature|Attack") ? "Attack" : 
+                                 stateInfo.IsName("Armature|Die") ? "Death" : "Unknown";
+            
+            Debug.Log($"SimpleEnemy: Animation check - Current state: {currentState} (normalizedTime: {stateInfo.normalizedTime:F2}) on '{name}'");
+            
+            // If still in idle when should be walking, force the transition
+            if (stateInfo.IsName("Armature|Idle") && hasWalkParam && animator.GetBool(WALK_PARAM))
+            {
+                Debug.LogWarning($"SimpleEnemy: Forcing walk transition on '{name}' - stuck in idle!");
+                animator.Play("Armature|Walk", 0, 0f);
+            }
+        }
+    }
+    
+    // Method to ensure walking animation loops properly
+    void EnsureWalkingAnimationLoops()
+    {
+        if (animator != null && hasWalkParam)
+        {
+            // Get current walking state info
+            var stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+            
+            // Check if we're in the walking state and if it's near the end
+            if (stateInfo.IsName("Armature|Walk"))
+            {
+                // If animation is near the end (90% complete), reset it to loop
+                if (stateInfo.normalizedTime >= 0.9f)
+                {
+                    animator.Play("Armature|Walk", 0, 0f);
+                    Debug.Log("Reset walking animation to loop");
+                }
+            }
+        }
+    }
+    
+    // Method to snap zombie to ground level (instant version)
+    void SnapToGround()
+    {
+        // Cast a ray downward to find the ground
+        RaycastHit hit;
+        if (Physics.Raycast(transform.position + Vector3.up, Vector3.down, out hit, 10f))
+        {
+            // Move the zombie to the ground level
+            Vector3 newPosition = transform.position;
+            newPosition.y = hit.point.y;
+            transform.position = newPosition;
+            
+            Debug.Log($"Snapped zombie to ground at Y: {hit.point.y}");
+        }
+        else
+        {
+            // Fallback: try to find NavMesh ground
+            if (NavMesh.SamplePosition(transform.position, out NavMeshHit navHit, 5f, NavMesh.AllAreas))
+            {
+                Vector3 newPosition = transform.position;
+                newPosition.y = navHit.position.y;
+                transform.position = newPosition;
+                
+                Debug.Log($"Snapped zombie to NavMesh ground at Y: {navHit.position.y}");
+            }
+        }
     }
     
     // Visual debugging
@@ -296,5 +593,22 @@ public class SimpleEnemy : MonoBehaviour
                 Gizmos.DrawLine(transform.position, player.position);
             }
         }
+    }
+}
+
+// Local helpers
+static class SimpleEnemyAnimatorExtensions
+{
+    public static bool AnimatorHasParameter(this Animator animator, string paramName, AnimatorControllerParameterType type)
+    {
+        if (animator == null || string.IsNullOrEmpty(paramName)) return false;
+        var parameters = animator.parameters;
+        for (int i = 0; i < parameters.Length; i++)
+        {
+            var p = parameters[i];
+            if (p.type == type && p.name == paramName)
+                return true;
+        }
+        return false;
     }
 }
