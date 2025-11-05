@@ -13,7 +13,10 @@ public class EnemySpawner : MonoBehaviour
     [Header("Spawn Points")]
     public Transform[] spawnPoints;
     public bool useRandomSpawnPoints = true;
-    
+
+    [Header("Time Control")]
+    public DayNightCycle dayNightCycle;
+
     private Transform player;
     private int currentEnemyCount = 0;
     private Coroutine spawnCoroutine;
@@ -48,9 +51,9 @@ public class EnemySpawner : MonoBehaviour
         while (true)
         {
             yield return new WaitForSeconds(spawnInterval);
-            
+
             // Only spawn if we have room for more enemies
-            if (currentEnemyCount < maxEnemies)
+            if (currentEnemyCount < maxEnemies && dayNightCycle != null && dayNightCycle.IsNightTime())
             {
                 SpawnEnemy();
             }

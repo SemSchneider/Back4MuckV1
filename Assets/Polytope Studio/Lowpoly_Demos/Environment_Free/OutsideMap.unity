@@ -2339,7 +2339,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   timeOfDay: 7.7
-  dayDuration: 120
+  dayDuration: 20
   sun: {fileID: 1570689919}
   lightColor:
     serializedVersion: 2
@@ -2397,10 +2397,10 @@ MonoBehaviour:
     m_RotationOrder: 4
   dayFog: {r: 0.76560336, g: 0.7960092, b: 0.82641506, a: 1}
   nightFog: {r: 0.05, g: 0.05, b: 0.1, a: 1}
-  dayFogDensity: 0.0223
+  dayFogDensity: 0
   nightFogDensity: 0.02
   skyboxMaterial: {fileID: 2100000, guid: 7601d19453db545419dbe9676ec75f05, type: 2}
-  dayExposure: 1.3
+  dayExposure: 1
   nightExposure: 1
 --- !u!4 &1712621833 stripped
 Transform:
@@ -2585,6 +2585,7 @@ MonoBehaviour:
   minDistanceFromPlayer: 15
   spawnPoints: []
   useRandomSpawnPoints: 1
+  dayNightCycle: {fileID: 1570689922}
 --- !u!4 &2113244470
 Transform:
   m_ObjectHideFlags: 0
