@@ -65,5 +65,12 @@ public class DayNightCycle : MonoBehaviour
             float exposure = Mathf.Lerp(nightExposure, dayExposure, dot);
             skyboxMaterial.SetFloat("_Exposure", exposure);
         }
+
+        
     }
+    public bool IsNightTime()
+        {
+        // Nacht = tussen 18:00 en 06:00
+        return (timeOfDay >= 18f || timeOfDay < 6f);
+        }
 }

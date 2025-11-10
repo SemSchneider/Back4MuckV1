@@ -13,7 +13,10 @@ public class EnemySpawner : MonoBehaviour
     [Header("Spawn Points")]
     public Transform[] spawnPoints;
     public bool useRandomSpawnPoints = true;
-    
+
+    [Header("Time Control")]
+    public DayNightCycle dayNightCycle;
+
     private Transform player;
     private int currentEnemyCount = 0;
     private Coroutine spawnCoroutine;
@@ -48,9 +51,9 @@ public class EnemySpawner : MonoBehaviour
         while (true)
         {
             yield return new WaitForSeconds(spawnInterval);
-            
+
             // Only spawn if we have room for more enemies
-            if (currentEnemyCount < maxEnemies)
+            if (currentEnemyCount < maxEnemies && dayNightCycle != null && dayNightCycle.IsNightTime())
             {
                 SpawnEnemy();
             }
@@ -76,21 +79,8 @@ public class EnemySpawner : MonoBehaviour
             var enemyAnimator = newEnemy.GetComponentInChildren<Animator>(true);
             if (enemyAnimator != null)
             {
-                // Force animator to be enabled and properly configured
-                enemyAnimator.enabled = true;
                 enemyAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
                 enemyAnimator.applyRootMotion = false;
-                enemyAnimator.speed = 1f;
-                
-                // Force animator rebind to ensure proper state
-                enemyAnimator.Rebind();
-                enemyAnimator.Update(0f);
-                
-                // Set layer weights
-                if (enemyAnimator.layerCount > 0)
-                {
-                    enemyAnimator.SetLayerWeight(0, 1f);
-                }
 
                 if (enemyScript != null && enemyScript.animator == null)
                 {
@@ -100,13 +90,6 @@ public class EnemySpawner : MonoBehaviour
                 string controllerName = enemyAnimator.runtimeAnimatorController != null
                     ? enemyAnimator.runtimeAnimatorController.name : "<None>";
                 Debug.Log($"EnemySpawner: Spawned enemy '{newEnemy.name}' Animator='{enemyAnimator.name}' Controller='{controllerName}'");
-                
-                // Force initial state to idle
-                if (enemyAnimator.runtimeAnimatorController != null)
-                {
-                    enemyAnimator.Play("Armature|Idle", 0, 0f);
-                    Debug.Log($"EnemySpawner: Forced spawned enemy to idle state");
-                }
             }
             else
             {
@@ -115,9 +98,6 @@ public class EnemySpawner : MonoBehaviour
             
             currentEnemyCount++;
             Debug.Log($"Spawned enemy at {spawnPosition}. Total enemies: {currentEnemyCount}");
-            
-            // Start delayed animator initialization
-            StartCoroutine(DelayedAnimatorSetup(newEnemy));
         }
     }
     
@@ -204,36 +184,6 @@ public class EnemySpawner : MonoBehaviour
                     Gizmos.DrawLine(transform.position, spawnPoint.position);
                 }
             }
-        }
-    }
-    
-    // Delayed animator setup to ensure proper initialization
-    IEnumerator DelayedAnimatorSetup(GameObject enemy)
-    {
-        // Wait a frame for the enemy to fully initialize
-        yield return null;
-        
-        var animator = enemy.GetComponentInChildren<Animator>(true);
-        if (animator != null)
-        {
-            // Force another rebind after initialization
-            animator.Rebind();
-            animator.Update(0f);
-            
-            // Ensure it starts in idle state
-            animator.Play("Armature|Idle", 0, 0f);
-            
-            // Test animation parameters
-            if (animator.parameters.Length > 0)
-            {
-                Debug.Log($"EnemySpawner: Delayed setup - Animator has {animator.parameters.Length} parameters");
-                foreach (var param in animator.parameters)
-                {
-                    Debug.Log($"  - {param.name} ({param.type})");
-                }
-            }
-            
-            Debug.Log($"EnemySpawner: Delayed animator setup completed for '{enemy.name}'");
         }
     }
     

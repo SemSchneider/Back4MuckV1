@@ -7,7 +7,7 @@ public class PlayerMovement : MonoBehaviour
     private CharacterController controller;
     
     [Header("Speed Settings")]
-    [SerializeField] private float baseSpeed = 12f;
+    [SerializeField] private float speed = 12f;
     [SerializeField] private float sprintSpeed = 18f;
     private float currentSpeed;
     private Coroutine speedMultiplierRoutine;
@@ -27,7 +27,7 @@ public class PlayerMovement : MonoBehaviour
     void Start()
     {
         controller = GetComponent<CharacterController>();
-        currentSpeed = baseSpeed; // Initialize current speed
+        currentSpeed = speed; // Initialize current speed
     }
 
     public void ApplySpeedMultiplier(float multiplier, float duration)
@@ -45,7 +45,7 @@ public class PlayerMovement : MonoBehaviour
         }
 
         // Apply new multiplier
-        currentSpeed = baseSpeed * multiplier;
+        currentSpeed = speed * multiplier;
         
         // Start new timer
         speedMultiplierRoutine = StartCoroutine(ResetSpeedAfterDelay(duration));
@@ -54,7 +54,7 @@ public class PlayerMovement : MonoBehaviour
     private IEnumerator ResetSpeedAfterDelay(float delay)
     {
         yield return new WaitForSeconds(delay);
-        currentSpeed = baseSpeed;
+        currentSpeed = speed;
         speedMultiplierRoutine = null;
     }
 
@@ -73,7 +73,7 @@ public class PlayerMovement : MonoBehaviour
 		Vector3 move = transform.right * x + transform.forward * z;
 
 		// hold Left Shift to sprint while grounded
-		float appliedSpeed = (Input.GetKey(KeyCode.LeftShift) && isGrounded && (x != 0f || z != 0f)) ? sprintSpeed : currentSpeed;
+		float appliedSpeed = (Input.GetKey(KeyCode.LeftShift) && isGrounded && (x != 0f || z != 0f)) ? sprintSpeed : speed;
 		controller.Move(move * appliedSpeed * Time.deltaTime);
 
         if (Input.GetButtonDown("Jump") && isGrounded)
