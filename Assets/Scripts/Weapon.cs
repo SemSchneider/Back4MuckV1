@@ -377,7 +377,7 @@ public class Weapon : MonoBehaviour
         float volume = Mathf.Clamp01(src.volume);
         AudioSource.PlayClipAtPoint(clip, playPosition, volume);
 
-        if (FindObjectOfType<AudioListener>() == null)
+        if (FindFirstObjectByType<AudioListener>() == null)
         {
             Debug.LogWarning("No AudioListener found in the scene; sounds may be inaudible.", this);
         }

@@ -7,6 +7,8 @@ using System.Collections;
 /// </summary>
 public abstract class BaseEnemy : MonoBehaviour
 {
+    #region Base Enemy Configuration
+
     [Header("Base Enemy Settings")]
     public float maxHealth = 100f;
     [HideInInspector] public float health;
@@ -18,6 +20,7 @@ public abstract class BaseEnemy : MonoBehaviour
     public bool stopPushingAtAttackRange = true;
 
     public enum DeathBehavior { Instant, TimedDelay }
+    
     [Header("Death Settings")]
     public DeathBehavior deathBehavior = DeathBehavior.TimedDelay;
     public float deathDestroyDelay = 0.5f;
@@ -28,6 +31,14 @@ public abstract class BaseEnemy : MonoBehaviour
     public NavMeshAgent agent;
     public Animator animator;
     
+    [Header("Animator Runtime Settings")]
+    public bool forceAnimatorAlwaysAnimate = true;
+    public bool disableAnimatorRootMotion = true;
+
+    #endregion
+
+    #region Protected Fields
+
     // Protected fields that derived classes can access
     protected float lastAttackTime;
     protected bool isDead = false;
@@ -35,16 +46,20 @@ public abstract class BaseEnemy : MonoBehaviour
     protected bool hasWalkParam = false;
     protected bool hasAttackParam = false;
     protected bool hasDeathParam = false;
-    
-    [Header("Animator Runtime Settings")]
-    public bool forceAnimatorAlwaysAnimate = true;
-    public bool disableAnimatorRootMotion = true;
-    
+
+    #endregion
+
+    #region Animation Parameter Properties
+
     // Animation parameter names - can be overridden by derived classes
     protected virtual string WalkParam => "IsWalking";
     protected virtual string AttackParam => "Attack";
     protected virtual string DeathParam => "Death";
-    
+
+    #endregion
+
+    #region Unity Lifecycle
+
     // Virtual methods that can be overridden by derived classes
     protected virtual void Start()
     {
@@ -61,12 +76,30 @@ public abstract class BaseEnemy : MonoBehaviour
         
         UpdateEnemyBehavior(distanceToPlayer);
     }
+
+    #endregion
+
+    #region Initialization Methods
     
     protected virtual void InitializeEnemy()
     {
+        InitializeHealth();
+        FindPlayer();
+        GetComponents();
+        SetupAnimator();
+        SetupNavMeshAgent();
+        SetupPhysics();
+        SetupVerticalPlacement();
+    }
+
+    protected virtual void InitializeHealth()
+    {
         // Initialize health
         health = Mathf.Clamp(maxHealth, 1f, Mathf.Infinity);
-        
+    }
+
+    protected virtual void FindPlayer()
+    {
         // Find player if not assigned
         if (player == null)
         {
@@ -74,7 +107,10 @@ public abstract class BaseEnemy : MonoBehaviour
             if (playerObj != null)
                 player = playerObj.transform;
         }
-        
+    }
+
+    protected virtual void GetComponents()
+    {
         // Get components if not assigned
         if (agent == null)
             agent = GetComponent<NavMeshAgent>();
@@ -82,11 +118,6 @@ public abstract class BaseEnemy : MonoBehaviour
             animator = GetComponent<Animator>();
         if (animator == null)
             animator = GetComponentInChildren<Animator>();
-
-        SetupAnimator();
-        SetupNavMeshAgent();
-        SetupPhysics();
-        SetupVerticalPlacement();
     }
     
     protected virtual void SetupAnimator()
@@ -116,26 +147,29 @@ public abstract class BaseEnemy : MonoBehaviour
         if (animator.layerCount > 0)
             animator.SetLayerWeight(0, 1f);
 
+        CheckAnimatorController();
+        CacheAnimatorParameters();
+    }
+
+    protected virtual void CheckAnimatorController()
+    {
         // Check Animator Controller assignment
         if (animator.runtimeAnimatorController == null)
         {
             Debug.LogWarning($"{GetType().Name}: Animator on '{name}' has no Controller assigned.");
-        }
-        else
-        {
-            var controllerName = animator.runtimeAnimatorController.name;
-            Debug.Log($"{GetType().Name}: Animator='{animator.name}', Controller='{controllerName}' on '{name}'");
-            
-            // Force rebind for runtime clones
-            animator.Rebind();
-            animator.Update(0f);
-            Debug.Log($"{GetType().Name}: Forced animator rebind on '{name}'");
-            
-            // Additional setup for spawned enemies
-            StartCoroutine(DelayedAnimatorInitialization());
+            return;
         }
 
-        CacheAnimatorParameters();
+        var controllerName = animator.runtimeAnimatorController.name;
+        Debug.Log($"{GetType().Name}: Animator='{animator.name}', Controller='{controllerName}' on '{name}'");
+        
+        // Force rebind for runtime clones
+        animator.Rebind();
+        animator.Update(0f);
+        Debug.Log($"{GetType().Name}: Forced animator rebind on '{name}'");
+        
+        // Additional setup for spawned enemies
+        StartCoroutine(DelayedAnimatorInitialization());
     }
     
     protected virtual float GetAnimatorSpeed()
@@ -215,6 +249,10 @@ public abstract class BaseEnemy : MonoBehaviour
             transform.position = snapped;
         }
     }
+
+    #endregion
+
+    #region Behavior Methods
     
     protected virtual void UpdateEnemyBehavior(float distanceToPlayer)
     {
@@ -302,6 +340,10 @@ public abstract class BaseEnemy : MonoBehaviour
         if (animator != null && hasWalkParam)
             animator.SetBool(WalkParam, false);
     }
+
+    #endregion
+
+    #region Combat Methods
     
     protected virtual void Attack()
     {
@@ -364,6 +406,10 @@ public abstract class BaseEnemy : MonoBehaviour
             Die();
         }
     }
+
+    #endregion
+
+    #region Death Methods
     
     public virtual void Die()
     {
@@ -424,9 +470,13 @@ public abstract class BaseEnemy : MonoBehaviour
             }
         }
     }
+
+    #endregion
+
+    #region Coroutines
     
     // Coroutines and helper methods
-    protected virtual System.Collections.IEnumerator HideAfterDeathAnimation()
+    protected virtual IEnumerator HideAfterDeathAnimation()
     {
         yield return new WaitForSeconds(GetDeathAnimationTime());
         
@@ -448,13 +498,13 @@ public abstract class BaseEnemy : MonoBehaviour
         return 2f; // Default death animation time
     }
     
-    protected virtual System.Collections.IEnumerator SnapToGroundDelayed()
+    protected virtual IEnumerator SnapToGroundDelayed()
     {
         yield return new WaitForSeconds(1f);
         StartCoroutine(SmoothSnapToGround());
     }
     
-    protected virtual System.Collections.IEnumerator SmoothSnapToGround()
+    protected virtual IEnumerator SmoothSnapToGround()
     {
         Vector3 startPosition = transform.position;
         Vector3 targetPosition = startPosition;
@@ -489,7 +539,7 @@ public abstract class BaseEnemy : MonoBehaviour
         transform.position = targetPosition;
     }
     
-    protected virtual System.Collections.IEnumerator DelayedAnimatorInitialization()
+    protected virtual IEnumerator DelayedAnimatorInitialization()
     {
         yield return new WaitForEndOfFrame();
         yield return new WaitForEndOfFrame();
@@ -510,6 +560,10 @@ public abstract class BaseEnemy : MonoBehaviour
             Debug.Log($"{GetType().Name}: Delayed animator initialization completed for '{name}'");
         }
     }
+
+    #endregion
+
+    #region Utility Methods
     
     // Utility method for animator parameter checking
     protected bool AnimatorHasParameter(string paramName, AnimatorControllerParameterType type)
@@ -524,6 +578,10 @@ public abstract class BaseEnemy : MonoBehaviour
         }
         return false;
     }
+
+    #endregion
+
+    #region Debug Methods
     
     // Visual debugging
     protected virtual void OnDrawGizmosSelected()
@@ -547,4 +605,6 @@ public abstract class BaseEnemy : MonoBehaviour
             }
         }
     }
+
+    #endregion
 }

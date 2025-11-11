@@ -2,13 +2,18 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
+/// <summary>
+/// Manages player health, damage, healing, death and respawn
+/// </summary>
 public class PlayerHealth : MonoBehaviour
 {
+    #region Health Configuration
+    
     [Header("Health Settings")]
     public float maxHealth = 100f;
     public float currentHealth;
     
-    [Header("UI")]
+    [Header("UI References")]
     public Slider healthBar;
     public TMP_Text healthText;
     
@@ -16,10 +21,28 @@ public class PlayerHealth : MonoBehaviour
     public GameObject deathScreen;
     public float respawnDelay = 3f;
     
+    #endregion
+
+    #region Private Fields
+    
     private bool isDead = false;
     private bool warnedMissingHealthBar = false;
     
+    #endregion
+
+    #region Unity Lifecycle
+    
     void Start()
+    {
+        InitializeHealth();
+        ValidateUIReferences();
+    }
+    
+    #endregion
+
+    #region Initialization
+    
+    private void InitializeHealth()
     {
         currentHealth = maxHealth;
         UpdateHealthUI();
@@ -27,17 +50,25 @@ public class PlayerHealth : MonoBehaviour
         // Hide death screen if it exists
         if (deathScreen != null)
             deathScreen.SetActive(false);
-
+    }
+    
+    private void ValidateUIReferences()
+    {
         // Runtime guidance: warn clearly if UI bindings are missing
         if (healthBar == null)
         {
             Debug.LogWarning("PlayerHealth: 'healthBar' is not assigned. Add a Slider on your HUD Canvas and assign it to PlayerHealth.healthBar.", this);
         }
+        
         if (healthText == null)
         {
             Debug.Log("PlayerHealth: 'healthText' is not assigned (optional). Assign a TMP_Text if you want numeric health.", this);
         }
     }
+    
+    #endregion
+
+    #region Health Management
     
     public void TakeDamage(float damage)
     {
@@ -47,6 +78,7 @@ public class PlayerHealth : MonoBehaviour
         currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
         
         UpdateHealthUI();
+        TriggerDamageFeedback(damage);
         
         Debug.Log($"Player took {damage} damage. Health: {currentHealth:F1}/{maxHealth:F1}");
         
@@ -69,7 +101,11 @@ public class PlayerHealth : MonoBehaviour
         Debug.Log($"Player healed for {amount}. Health: {currentHealth:F1}/{maxHealth:F1}");
     }
     
-    void UpdateHealthUI()
+    #endregion
+
+    #region UI Management
+    
+    private void UpdateHealthUI()
     {
         // Update health bar
         if (healthBar != null)
@@ -89,17 +125,49 @@ public class PlayerHealth : MonoBehaviour
         }
     }
     
-    void Die()
+    #endregion
+
+    #region Damage Feedback
+    
+    private void TriggerDamageFeedback(float damage)
+    {
+        // Trigger camera shake on damage
+        if (CameraShake.Instance != null)
+        {
+            CameraShake.Instance.OnDamageTaken(damage);
+        }
+        else
+        {
+            Debug.LogWarning("PlayerHealth: CameraShake.Instance is null. Make sure CameraShake component is attached to the main camera.");
+        }
+    }
+    
+    #endregion
+
+    #region Death and Respawn
+    
+    private void Die()
     {
         if (isDead) return;
         
         isDead = true;
         Debug.Log("Player died!");
         
-        // Show death screen
+        ShowDeathScreen();
+        DisablePlayerControls();
+        
+        // Schedule respawn
+        Invoke(nameof(Respawn), respawnDelay);
+    }
+    
+    private void ShowDeathScreen()
+    {
         if (deathScreen != null)
             deathScreen.SetActive(true);
-        
+    }
+    
+    private void DisablePlayerControls()
+    {
         // Disable player movement
         var mouseMovement = GetComponent<MouseMovement>();
         if (mouseMovement != null)
@@ -113,21 +181,28 @@ public class PlayerHealth : MonoBehaviour
         var inventory = GetComponent<Inventory>();
         if (inventory != null)
             inventory.enabled = false;
-        
-        // Schedule respawn
-        Invoke(nameof(Respawn), respawnDelay);
     }
     
-    void Respawn()
+    private void Respawn()
     {
         isDead = false;
         currentHealth = maxHealth;
         UpdateHealthUI();
         
-        // Hide death screen
+        HideDeathScreen();
+        EnablePlayerControls();
+        
+        Debug.Log("Player respawned!");
+    }
+    
+    private void HideDeathScreen()
+    {
         if (deathScreen != null)
             deathScreen.SetActive(false);
-        
+    }
+    
+    private void EnablePlayerControls()
+    {
         // Re-enable player movement
         var mouseMovement = GetComponent<MouseMovement>();
         if (mouseMovement != null)
@@ -141,9 +216,11 @@ public class PlayerHealth : MonoBehaviour
         var inventory = GetComponent<Inventory>();
         if (inventory != null)
             inventory.enabled = true;
-        
-        Debug.Log("Player respawned!");
     }
+    
+    #endregion
+
+    #region Testing Methods
     
     // For testing purposes - can be called from UI buttons
     [ContextMenu("Take 25 Damage")]
@@ -157,4 +234,6 @@ public class PlayerHealth : MonoBehaviour
     {
         Heal(25f);
     }
+    
+    #endregion
 }

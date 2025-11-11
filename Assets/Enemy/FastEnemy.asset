@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1a0332478c1a33b468ff5d6cea6b258e, type: 3}
-  m_Name: Enemy1st
+  m_Name: FastEnemy
   m_EditorClassIdentifier: 
-  archetypeName: Basic Enemy
-  enemyPrefab: {fileID: 1541928481943697490, guid: 1e5873bae5e7e3845a9a4a887c4c94f8, type: 3}
-  cost: 1
-  spawnWeight: 3
-  description: Basic enemy archetype
+  archetypeName: Fast Enemy
+  enemyPrefab: {fileID: 580475504510449824, guid: 282a95abdb3dabd4aa06d735a085ca0d, type: 3}
+  cost: 2
+  spawnWeight: 0.7
+  description: Light enemy - low health, fast movement, dodge ability

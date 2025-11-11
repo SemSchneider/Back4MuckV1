@@ -12,7 +12,6 @@ public class NightHUD : MonoBehaviour
     [SerializeField] private TextMeshProUGUI budgetText;
     
     [Header("Display Settings")]
-    [SerializeField] private string nightPrefix = "Night ";
     [SerializeField] private string enemyPrefix = "Enemies: ";
     [SerializeField] private string budgetPrefix = "Budget: ";
     [SerializeField] private bool showBudgetInfo = true;

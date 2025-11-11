@@ -29,13 +29,36 @@ public class Bullet : MonoBehaviour
         }
         
         // Check if we hit an enemy
-        SimpleEnemy enemy = objectWeHit.gameObject.GetComponent<SimpleEnemy>();
-        if (enemy != null)
+        SimpleEnemy simpleEnemy = objectWeHit.gameObject.GetComponent<SimpleEnemy>();
+        if (simpleEnemy != null)
         {
-            print("hit enemy: " + objectWeHit.gameObject.name);
-            enemy.TakeDamage(25f); // Deal 25 damage to enemy
+            print("hit SimpleEnemy: " + objectWeHit.gameObject.name);
+            simpleEnemy.TakeDamage(25f); // Deal 25 damage to enemy
             CreateBulletImpactEffect(objectWeHit);
             Destroy(gameObject);
+            return;
+        }
+        
+        // Check if we hit a tank enemy
+        TankEnemy tankEnemy = objectWeHit.gameObject.GetComponent<TankEnemy>();
+        if (tankEnemy != null)
+        {
+            print("hit TankEnemy: " + objectWeHit.gameObject.name);
+            tankEnemy.TakeDamage(25f); // Deal 25 damage to tank enemy
+            CreateBulletImpactEffect(objectWeHit);
+            Destroy(gameObject);
+            return;
+        }
+        
+        // Check if we hit a fast enemy
+        FastEnemy fastEnemy = objectWeHit.gameObject.GetComponent<FastEnemy>();
+        if (fastEnemy != null)
+        {
+            print("hit FastEnemy: " + objectWeHit.gameObject.name);
+            fastEnemy.TakeDamage(25f); // Deal 25 damage to fast enemy
+            CreateBulletImpactEffect(objectWeHit);
+            Destroy(gameObject);
+            return;
         }
 
     }

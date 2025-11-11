@@ -3,26 +3,26 @@ using UnityEngine.AI;
 using System.Collections;
 
 /// <summary>
-/// Fast Enemy Archetype - Low health, fast movement, low damage, quick attacks
+/// Fast Enemy Archetype - Low health, fast movement, low damage, quick attacks, dodge ability
 /// </summary>
 public class FastEnemy : MonoBehaviour
 {
     [Header("Fast Enemy Settings")]
     public float maxHealth = 50f;  // Lower health than SimpleEnemy
     public float health = 50f;
-    public float moveSpeed = 6f;  // Much faster than SimpleEnemy
+    public float moveSpeed = 8f;  // Much faster than SimpleEnemy (increased from 6f)
     public float detectionRange = 12f;  // Good detection range
-    public float attackRange = 1.5f;  // Shorter attack range
+    public float attackRange = 2.2f;  // Slightly longer attack range (increased from 1.5f)
     public float attackDamage = 15f;  // Lower damage
-    public float attackCooldown = 0.8f;  // Faster attacks
+    public float attackCooldown = 0.6f;  // Faster attacks (improved from 0.8f)
     public bool stopPushingAtAttackRange = true;
 
     [Header("Fast Special Abilities")]
-    public float dodgeSpeed = 8f;  // Speed during dodge
-    public float dodgeDistance = 3f;  // Distance of dodge
-    public float dodgeChance = 0.3f;  // 30% chance to dodge when taking damage
+    public float dodgeSpeed = 10f;  // Speed during dodge (increased)
+    public float dodgeDistance = 4f;  // Distance of dodge (increased)
+    public float dodgeChance = 0.4f;  // 40% chance to dodge when taking damage (increased)
     public bool canDodge = true;  // Whether this fast enemy can dodge
-    public float strafingSpeed = 4f;  // Speed when strafing around player
+    public float strafingSpeed = 6f;  // Speed when strafing around player (increased)
     public bool canStrafe = true;  // Whether to strafe around player
 
     public enum DeathBehavior { Instant, TimedDelay }
@@ -50,6 +50,18 @@ public class FastEnemy : MonoBehaviour
     private bool hasDeathParam = false;
     private bool hasDodgeParam = false;
     
+    [Header("Feedback Effects")]
+    public GameObject bloodHitEffectPrefab;
+    public Transform hitEffectSpawnPoint; // Optional: specific point to spawn effects, defaults to center of enemy
+    public bool enableHitFeedback = true;
+    public float hitFeedbackDuration = 0.2f; // Shorter for fast enemy
+    public Color hitFlashColor = Color.red;
+    
+    private bool hasHitParam = false;
+    private Renderer[] enemyRenderers;
+    private Material[] originalMaterials;
+    private Material[] flashMaterials;
+    
     [Header("Animator Runtime Settings")]
     public bool forceAnimatorAlwaysAnimate = true;
     public bool disableAnimatorRootMotion = true;
@@ -59,9 +71,12 @@ public class FastEnemy : MonoBehaviour
     private const string ATTACK_PARAM = "Attack";
     private const string DEATH_PARAM = "Death";
     private const string DODGE_PARAM = "Dodge";
+    private const string HIT_PARAM = "Hit";
     
     void Start()
     {
+        Debug.Log($"FastEnemy: Starting initialization for '{name}'");
+        
         // Initialize health from maxHealth at start
         health = Mathf.Clamp(maxHealth, 1f, Mathf.Infinity);
         
@@ -70,7 +85,14 @@ public class FastEnemy : MonoBehaviour
         {
             GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
             if (playerObj != null)
+            {
                 player = playerObj.transform;
+                Debug.Log($"FastEnemy: Found player '{playerObj.name}'");
+            }
+            else
+            {
+                Debug.LogWarning($"FastEnemy: No GameObject with 'Player' tag found! Make sure your player has the 'Player' tag.");
+            }
         }
         
         // Get components if not assigned
@@ -126,6 +148,7 @@ public class FastEnemy : MonoBehaviour
             hasAttackParam = FastEnemyAnimatorExtensions.AnimatorHasParameter(animator, ATTACK_PARAM, AnimatorControllerParameterType.Trigger);
             hasDeathParam = FastEnemyAnimatorExtensions.AnimatorHasParameter(animator, DEATH_PARAM, AnimatorControllerParameterType.Trigger);
             hasDodgeParam = FastEnemyAnimatorExtensions.AnimatorHasParameter(animator, DODGE_PARAM, AnimatorControllerParameterType.Trigger);
+            hasHitParam = FastEnemyAnimatorExtensions.AnimatorHasParameter(animator, HIT_PARAM, AnimatorControllerParameterType.Trigger);
 
             if (!hasWalkParam)
                 Debug.LogWarning($"FastEnemy: Animator missing Bool parameter '{WALK_PARAM}' on '{name}'.");
@@ -135,16 +158,26 @@ public class FastEnemy : MonoBehaviour
                 Debug.LogWarning($"FastEnemy: Animator missing Trigger parameter '{DEATH_PARAM}' on '{name}'.");
             if (!hasDodgeParam && canDodge)
                 Debug.LogWarning($"FastEnemy: Animator missing Trigger parameter '{DODGE_PARAM}' on '{name}'. Dodge disabled.");
+            if (!hasHitParam && enableHitFeedback)
+                Debug.LogWarning($"FastEnemy: Animator missing Trigger parameter '{HIT_PARAM}' on '{name}'. Hit animation won't play.");
+        }
+        
+        // Initialize hit feedback materials and renderers
+        if (enableHitFeedback)
+        {
+            InitializeHitFeedback();
         }
             
         // Configure NavMesh Agent for fast behavior
         if (agent != null)
         {
             agent.speed = moveSpeed;
-            agent.stoppingDistance = Mathf.Max(0f, attackRange - 0.2f);
+            agent.stoppingDistance = Mathf.Max(0.1f, attackRange - 0.5f); // Give more room to get close
             agent.acceleration = 12f; // Very fast acceleration
             agent.angularSpeed = 240f; // Very fast turning
             agent.obstacleAvoidanceType = ObstacleAvoidanceType.LowQualityObstacleAvoidance; // Faster processing
+            
+            Debug.Log($"FastEnemy: Agent configured - Speed: {agent.speed}, StoppingDistance: {agent.stoppingDistance}, AttackRange: {attackRange}");
         }
         
         // Configure Rigidbody to prevent falling
@@ -183,9 +216,20 @@ public class FastEnemy : MonoBehaviour
     {
         if (isDead || isDodging) return;
         
-        if (player == null) return;
+        if (player == null) 
+        {
+            if (Time.frameCount % 60 == 0) // Log once per second at 60fps
+                Debug.LogWarning($"FastEnemy: Player is null on '{name}'!");
+            return;
+        }
         
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
+        
+        // Debug log occasionally
+        if (Time.frameCount % 60 == 0) // Once per second at 60fps
+        {
+            Debug.Log($"FastEnemy '{name}': Distance to player: {distanceToPlayer:F2}, Detection range: {detectionRange:F2}, In range: {distanceToPlayer <= detectionRange}");
+        }
         
         // Update strafe timer
         strafeTimer += Time.deltaTime;
@@ -209,6 +253,8 @@ public class FastEnemy : MonoBehaviour
             // Check if in attack range
             if (distanceToPlayer <= attackRange)
             {
+                Debug.Log($"FastEnemy: In attack range! Distance: {distanceToPlayer:F2}, Attack range: {attackRange:F2}");
+                
                 // Stop moving and attack
                 if (agent != null && agent.isActiveAndEnabled)
                 {
@@ -229,7 +275,12 @@ public class FastEnemy : MonoBehaviour
                 // Attack if cooldown is over
                 if (Time.time - lastAttackTime >= attackCooldown && !isAttacking)
                 {
+                    Debug.Log($"FastEnemy: Cooldown ready, attacking! Time since last attack: {Time.time - lastAttackTime:F2}");
                     Attack();
+                }
+                else
+                {
+                    Debug.Log($"FastEnemy: Attack on cooldown. Time since last attack: {Time.time - lastAttackTime:F2}, cooldown: {attackCooldown:F2}");
                 }
             }
             else
@@ -313,19 +364,29 @@ public class FastEnemy : MonoBehaviour
         if (player != null)
         {
             float distanceToPlayer = Vector3.Distance(transform.position, player.position);
+            Debug.Log($"FastEnemy: Attack - Distance to player: {distanceToPlayer:F2}, Attack range: {attackRange:F2}");
+            
             if (distanceToPlayer <= attackRange)
             {
                 var playerHealth = player.GetComponent<PlayerHealth>();
                 if (playerHealth != null)
                 {
                     playerHealth.TakeDamage(attackDamage);
-                    Debug.Log($"Fast enemy attacked player for {attackDamage} damage!");
+                    Debug.Log($"FastEnemy: Successfully attacked player for {attackDamage} damage!");
                 }
                 else
                 {
-                    Debug.LogWarning("Player hit by fast enemy! (No PlayerHealth component found on player)");
+                    Debug.LogWarning($"FastEnemy: Player found but no PlayerHealth component! Player name: '{player.name}', tag: '{player.tag}'");
                 }
             }
+            else
+            {
+                Debug.Log($"FastEnemy: Player out of attack range. Distance: {distanceToPlayer:F2}, needed: {attackRange:F2}");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("FastEnemy: Player reference is null during attack!");
         }
         
         // Reset attack state
@@ -353,10 +414,113 @@ public class FastEnemy : MonoBehaviour
         health -= damage;
         Debug.Log($"Fast Enemy took {damage} damage. Health: {health:F1}/{maxHealth:F1}");
         
+        // Trigger hit feedback
+        if (enableHitFeedback)
+        {
+            TriggerHitFeedback();
+        }
+        
         if (health <= 0)
         {
             Debug.Log($"Fast Enemy died after taking {damage} damage");
             Die();
+        }
+    }
+    
+    private void InitializeHitFeedback()
+    {
+        // Get all renderers on this enemy
+        enemyRenderers = GetComponentsInChildren<Renderer>();
+        if (enemyRenderers.Length == 0)
+        {
+            Debug.LogWarning($"FastEnemy: No renderers found for hit feedback on '{name}'");
+            return;
+        }
+        
+        // Store original materials
+        originalMaterials = new Material[enemyRenderers.Length];
+        flashMaterials = new Material[enemyRenderers.Length];
+        
+        for (int i = 0; i < enemyRenderers.Length; i++)
+        {
+            originalMaterials[i] = enemyRenderers[i].material;
+            
+            // Create a copy of the material and modify its color for flash effect
+            flashMaterials[i] = new Material(originalMaterials[i]);
+            flashMaterials[i].color = Color.Lerp(originalMaterials[i].color, hitFlashColor, 0.7f);
+        }
+    }
+    
+    private void TriggerHitFeedback()
+    {
+        // Visual feedback - spawn blood effect
+        SpawnBloodEffect();
+        
+        // Audio feedback
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.PlayZombieHitSound(transform.position);
+        }
+        
+        // Animation feedback
+        if (animator != null && hasHitParam)
+        {
+            animator.SetTrigger(HIT_PARAM);
+        }
+        
+        // Color flash feedback
+        if (enemyRenderers != null && enemyRenderers.Length > 0)
+        {
+            StartCoroutine(FlashHitColor());
+        }
+    }
+    
+    private void SpawnBloodEffect()
+    {
+        if (bloodHitEffectPrefab != null)
+        {
+            Vector3 effectPosition;
+            
+            // Use specified hit point or default to center
+            if (hitEffectSpawnPoint != null)
+            {
+                effectPosition = hitEffectSpawnPoint.position;
+            }
+            else
+            {
+                effectPosition = transform.position + Vector3.up * (GetComponent<Collider>()?.bounds.size.y * 0.5f ?? 1f);
+            }
+            
+            GameObject bloodEffect = Instantiate(bloodHitEffectPrefab, effectPosition, Quaternion.identity);
+            
+            // Destroy the effect after a short time
+            Destroy(bloodEffect, 3f); // Shorter for fast enemy
+        }
+    }
+    
+    private System.Collections.IEnumerator FlashHitColor()
+    {
+        if (enemyRenderers == null || flashMaterials == null) yield break;
+        
+        // Apply flash materials
+        for (int i = 0; i < enemyRenderers.Length; i++)
+        {
+            if (enemyRenderers[i] != null && flashMaterials[i] != null)
+            {
+                enemyRenderers[i].material = flashMaterials[i];
+            }
+        }
+        
+        // Wait for the feedback duration (shorter for fast enemy)
+        yield return new WaitForSeconds(hitFeedbackDuration);
+        
+        // Restore original materials
+        for (int i = 0; i < enemyRenderers.Length; i++)
+        {
+            if (enemyRenderers[i] != null && originalMaterials[i] != null)
+            {
+                enemyRenderers[i].material = originalMaterials[i];
+            }
         }
     }
     
@@ -437,6 +601,12 @@ public class FastEnemy : MonoBehaviour
         isDead = true;
         isDodging = false;
         isStrafing = false;
+        
+        // Play death sound
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.PlayZombieDeathSound(transform.position);
+        }
         
         // Stop movement
         if (agent != null)
