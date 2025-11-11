@@ -2,22 +2,32 @@ using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
 
-public class SimpleEnemy : MonoBehaviour
+/// <summary>
+/// Tank Enemy Archetype - High health, slow movement, high damage, longer range
+/// </summary>
+public class TankEnemy : MonoBehaviour
 {
-    [Header("Enemy Settings")]
-    public float maxHealth = 100f;
-    public float health = 100f;
-    public float moveSpeed = 3.5f;
-    public float detectionRange = 10f;
-    public float attackRange = 2f;
-    public float attackDamage = 25f;
-    public float attackCooldown = 1.5f;
+    [Header("Tank Enemy Settings")]
+    public float maxHealth = 250f;  // Much higher health than SimpleEnemy
+    public float health = 250f;
+    public float moveSpeed = 1.5f;  // Slower than SimpleEnemy
+    public float detectionRange = 15f;  // Longer detection range
+    public float attackRange = 4f;  // Longer attack range
+    public float attackDamage = 50f;  // Higher damage
+    public float attackCooldown = 2.5f;  // Slower attacks
     public bool stopPushingAtAttackRange = true;
 
-	public enum DeathBehavior { Instant, TimedDelay }
-	[Header("Death Settings")]
-	public DeathBehavior deathBehavior = DeathBehavior.TimedDelay;
-    public float deathDestroyDelay = 0.5f;
+    [Header("Tank Special Abilities")]
+    public float chargeSpeed = 6f;  // Speed during charge attack
+    public float chargeDistance = 8f;  // Maximum charge distance
+    public float chargeDamage = 75f;  // Damage during charge
+    public float chargeRecoveryTime = 3f;  // Time to recover after charge
+    public bool canCharge = true;  // Whether this tank can charge
+
+    public enum DeathBehavior { Instant, TimedDelay }
+    [Header("Death Settings")]
+    public DeathBehavior deathBehavior = DeathBehavior.TimedDelay;
+    public float deathDestroyDelay = 1f;  // Longer delay for tank death
     public bool hideVisualsOnDeath = true;
     
     [Header("Components")]
@@ -26,11 +36,15 @@ public class SimpleEnemy : MonoBehaviour
     public Animator animator;
     
     private float lastAttackTime;
+    private float lastChargeTime;
     private bool isDead = false;
     private bool isAttacking = false;
+    private bool isCharging = false;
+    private bool isRecovering = false;
     private bool hasWalkParam = false;
     private bool hasAttackParam = false;
     private bool hasDeathParam = false;
+    private bool hasChargeParam = false;
     
     [Header("Animator Runtime Settings")]
     public bool forceAnimatorAlwaysAnimate = true;
@@ -40,11 +54,13 @@ public class SimpleEnemy : MonoBehaviour
     private const string WALK_PARAM = "IsWalking";
     private const string ATTACK_PARAM = "Attack";
     private const string DEATH_PARAM = "Death";
+    private const string CHARGE_PARAM = "Charge";
     
     void Start()
     {
         // Initialize health from maxHealth at start
         health = Mathf.Clamp(maxHealth, 1f, Mathf.Infinity);
+        
         // Find player if not assigned
         if (player == null)
         {
@@ -64,7 +80,7 @@ public class SimpleEnemy : MonoBehaviour
         // --- RUNTIME ANIMATOR CHECKS FOR CLONES ---
         if (animator == null)
         {
-            Debug.LogWarning($"SimpleEnemy: No Animator found on '{name}' or its children. Animations will not play.");
+            Debug.LogWarning($"TankEnemy: No Animator found on '{name}' or its children. Animations will not play.");
         }
         else
         {
@@ -72,7 +88,7 @@ public class SimpleEnemy : MonoBehaviour
             if (!animator.enabled)
             {
                 animator.enabled = true;
-                Debug.LogWarning($"SimpleEnemy: Animator was disabled on '{name}', enabling it.");
+                Debug.LogWarning($"TankEnemy: Animator was disabled on '{name}', enabling it.");
             }
             // Always animate (important for runtime clones)
             if (forceAnimatorAlwaysAnimate)
@@ -87,40 +103,43 @@ public class SimpleEnemy : MonoBehaviour
             // Check Animator Controller assignment
             if (animator.runtimeAnimatorController == null)
             {
-                Debug.LogWarning($"SimpleEnemy: Animator on '{name}' has no Controller assigned. Assign your Zombie.controller (or equivalent) in the prefab.");
+                Debug.LogWarning($"TankEnemy: Animator on '{name}' has no Controller assigned.");
             }
             else
             {
                 var controllerName = animator.runtimeAnimatorController.name;
-                Debug.Log($"SimpleEnemy: Animator='{animator.name}', Controller='{controllerName}' on '{name}'");
+                Debug.Log($"TankEnemy: Animator='{animator.name}', Controller='{controllerName}' on '{name}'");
                 // Force rebind for runtime clones
                 animator.Rebind();
                 animator.Update(0f);
-                Debug.Log($"SimpleEnemy: Forced animator rebind on '{name}'");
+                Debug.Log($"TankEnemy: Forced animator rebind on '{name}'");
                 // Additional setup for spawned enemies
                 StartCoroutine(DelayedAnimatorInitialization());
             }
 
             // Cache animator parameter availability
-            hasWalkParam = SimpleEnemyAnimatorExtensions.AnimatorHasParameter(animator, WALK_PARAM, AnimatorControllerParameterType.Bool);
-            hasAttackParam = SimpleEnemyAnimatorExtensions.AnimatorHasParameter(animator, ATTACK_PARAM, AnimatorControllerParameterType.Trigger);
-            hasDeathParam = SimpleEnemyAnimatorExtensions.AnimatorHasParameter(animator, DEATH_PARAM, AnimatorControllerParameterType.Trigger);
+            hasWalkParam = TankEnemyAnimatorExtensions.AnimatorHasParameter(animator, WALK_PARAM, AnimatorControllerParameterType.Bool);
+            hasAttackParam = TankEnemyAnimatorExtensions.AnimatorHasParameter(animator, ATTACK_PARAM, AnimatorControllerParameterType.Trigger);
+            hasDeathParam = TankEnemyAnimatorExtensions.AnimatorHasParameter(animator, DEATH_PARAM, AnimatorControllerParameterType.Trigger);
+            hasChargeParam = TankEnemyAnimatorExtensions.AnimatorHasParameter(animator, CHARGE_PARAM, AnimatorControllerParameterType.Trigger);
 
             if (!hasWalkParam)
-                Debug.LogWarning($"SimpleEnemy: Animator missing Bool parameter '{WALK_PARAM}' on '{name}'. Walking state won't switch.");
+                Debug.LogWarning($"TankEnemy: Animator missing Bool parameter '{WALK_PARAM}' on '{name}'.");
             if (!hasAttackParam)
-                Debug.LogWarning($"SimpleEnemy: Animator missing Trigger parameter '{ATTACK_PARAM}' on '{name}'. Attack animation won't play.");
+                Debug.LogWarning($"TankEnemy: Animator missing Trigger parameter '{ATTACK_PARAM}' on '{name}'.");
             if (!hasDeathParam)
-                Debug.LogWarning($"SimpleEnemy: Animator missing Trigger parameter '{DEATH_PARAM}' on '{name}'. Death animation won't play.");
+                Debug.LogWarning($"TankEnemy: Animator missing Trigger parameter '{DEATH_PARAM}' on '{name}'.");
+            if (!hasChargeParam && canCharge)
+                Debug.LogWarning($"TankEnemy: Animator missing Trigger parameter '{CHARGE_PARAM}' on '{name}'. Charge attacks disabled.");
         }
             
-        // Configure NavMesh Agent
+        // Configure NavMesh Agent for tank behavior
         if (agent != null)
         {
             agent.speed = moveSpeed;
-            agent.stoppingDistance = Mathf.Max(0f, attackRange - 0.5f); // Stop slightly before attack range
-            agent.acceleration = 8f; // Faster acceleration
-            agent.angularSpeed = 120f; // Faster turning
+            agent.stoppingDistance = Mathf.Max(0f, attackRange - 0.5f);
+            agent.acceleration = 4f; // Slower acceleration for heavy tank
+            agent.angularSpeed = 60f; // Slower turning for tank
             agent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
         }
         
@@ -128,26 +147,22 @@ public class SimpleEnemy : MonoBehaviour
         Rigidbody rb = GetComponent<Rigidbody>();
         if (rb != null)
         {
-            rb.isKinematic = true; // Prevents physics interference
-            rb.useGravity = false; // NavMesh handles movement
+            rb.isKinematic = true;
+            rb.useGravity = false;
         }
 
-        // Calibrate agent vertical placement so the enemy sits on the NavMesh
+        // Calibrate agent vertical placement
         if (agent != null)
         {
             var capsule = GetComponent<CapsuleCollider>();
             if (capsule != null)
             {
-                // Ensure agent size is at least collider size
                 agent.height = Mathf.Max(agent.height, capsule.height);
                 agent.radius = Mathf.Max(agent.radius, capsule.radius);
-
-                // If pivot is at center (capsule.center.y ≈ 0), offset should be half height
-                // General formula to bring collider bottom to NavMesh surface
                 agent.baseOffset = Mathf.Max(0f, (capsule.height * 0.5f) - capsule.center.y);
             }
 
-            // Snap onto NavMesh at start to avoid half-sinking from import pivots
+            // Snap onto NavMesh at start
             if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 2f, NavMesh.AllAreas))
             {
                 Vector3 snapped = hit.position;
@@ -159,15 +174,9 @@ public class SimpleEnemy : MonoBehaviour
     
     void Update()
     {
-        if (isDead) return;
+        if (isDead || isRecovering) return;
         
         if (player == null) return;
-        
-        // Continuously ensure walking animation loops while moving
-        if (animator != null && hasWalkParam && animator.GetBool(WALK_PARAM))
-        {
-            EnsureWalkingAnimationLoops();
-        }
         
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
         
@@ -176,14 +185,27 @@ public class SimpleEnemy : MonoBehaviour
         {
             // Face the player
             Vector3 lookDirection = (player.position - transform.position).normalized;
-            lookDirection.y = 0; // Keep enemy upright
+            lookDirection.y = 0;
             if (lookDirection != Vector3.zero)
             {
                 transform.rotation = Quaternion.LookRotation(lookDirection);
             }
             
+            // Check for charge attack (if tank can charge and conditions are met)
+            bool shouldCharge = canCharge && 
+                               !isCharging && 
+                               distanceToPlayer > attackRange && 
+                               distanceToPlayer <= chargeDistance &&
+                               Time.time - lastChargeTime >= chargeRecoveryTime * 2f; // Longer cooldown for charge
+            
+            if (shouldCharge)
+            {
+                StartCoroutine(PerformChargeAttack());
+                return;
+            }
+            
             // Check if in attack range
-            if (distanceToPlayer <= attackRange)
+            if (distanceToPlayer <= attackRange && !isCharging)
             {
                 // Stop moving and attack
                 if (agent != null && agent.isActiveAndEnabled)
@@ -197,11 +219,8 @@ public class SimpleEnemy : MonoBehaviour
                     agent.SetDestination(transform.position);
                 }
                     
-                if (animator != null)
-                {
-                    if (hasWalkParam)
-                        animator.SetBool(WALK_PARAM, false);
-                }
+                if (animator != null && hasWalkParam)
+                    animator.SetBool(WALK_PARAM, false);
                 
                 // Attack if cooldown is over
                 if (Time.time - lastAttackTime >= attackCooldown && !isAttacking)
@@ -209,33 +228,17 @@ public class SimpleEnemy : MonoBehaviour
                     Attack();
                 }
             }
-            else
+            else if (!isCharging)
             {
                 // Move towards player
                 if (agent != null && agent.isActiveAndEnabled)
                 {
                     agent.isStopped = false;
                     agent.SetDestination(player.position);
-                    if (animator != null)
+                    if (animator != null && hasWalkParam)
                     {
-                        if (hasWalkParam)
-                        {
-                            animator.SetBool(WALK_PARAM, true);
-                            Debug.Log($"SimpleEnemy: Set {WALK_PARAM}=true on '{name}'");
-                            
-                            // Check if transition actually happened
-                            StartCoroutine(CheckAnimationTransition());
-                            
-                            // Ensure walking animation loops properly
-                            EnsureWalkingAnimationLoops();
-                        }
-                        else
-                        {
-                            Debug.LogWarning($"SimpleEnemy: Cannot set {WALK_PARAM} - parameter not found on '{name}'");
-                        }
-                        
-                        // Force animator update for spawned enemies
-                        animator.Update(0f);
+                        animator.SetBool(WALK_PARAM, true);
+                        Debug.Log($"TankEnemy: Set {WALK_PARAM}=true on '{name}'");
                     }
                 }
             }
@@ -243,17 +246,14 @@ public class SimpleEnemy : MonoBehaviour
         else
         {
             // Player not in range, stop moving
-            if (agent != null && agent.isActiveAndEnabled)
+            if (agent != null && agent.isActiveAndEnabled && !isCharging)
             {
                 agent.isStopped = false;
                 agent.SetDestination(transform.position);
                 agent.velocity = Vector3.zero;
             }
-            if (animator != null)
-            {
-                if (hasWalkParam)
-                    animator.SetBool(WALK_PARAM, false);
-            }
+            if (animator != null && hasWalkParam)
+                animator.SetBool(WALK_PARAM, false);
         }
     }
     
@@ -262,43 +262,125 @@ public class SimpleEnemy : MonoBehaviour
         isAttacking = true;
         lastAttackTime = Time.time;
         
-        // Trigger attack animation
-        if (animator != null)
-        {
-            if (hasAttackParam)
-                animator.SetTrigger(ATTACK_PARAM);
-        }
+        Debug.Log($"TankEnemy: Performing heavy attack on '{name}'");
         
-        // Deal damage to player (check if player is still in range)
+        // Trigger attack animation
+        if (animator != null && hasAttackParam)
+            animator.SetTrigger(ATTACK_PARAM);
+        
+        // Deal damage to player
         if (player != null)
         {
             float distanceToPlayer = Vector3.Distance(transform.position, player.position);
             if (distanceToPlayer <= attackRange)
             {
-                // Try to get player health component
                 var playerHealth = player.GetComponent<PlayerHealth>();
                 if (playerHealth != null)
                 {
                     playerHealth.TakeDamage(attackDamage);
-                    Debug.Log($"Enemy attacked player for {attackDamage} damage!");
+                    Debug.Log($"Tank enemy attacked player for {attackDamage} damage!");
                 }
                 else
                 {
-                    Debug.LogWarning("Player hit! (No PlayerHealth component found on player)");
+                    Debug.LogWarning("Player hit by tank! (No PlayerHealth component found on player)");
                 }
             }
-            else
-            {
-                Debug.Log("Enemy attack missed - player too far away");
-            }
-        }
-        else
-        {
-            Debug.LogWarning("Enemy attack failed - no player reference");
         }
         
-        // Reset attack state after animation
-        Invoke(nameof(ResetAttack), 1f);
+        // Reset attack state
+        Invoke(nameof(ResetAttack), 1.5f); // Longer recovery for heavy attack
+    }
+    
+    System.Collections.IEnumerator PerformChargeAttack()
+    {
+        if (player == null || isCharging || isDead) yield break;
+        
+        isCharging = true;
+        lastChargeTime = Time.time;
+        
+        Debug.Log($"TankEnemy: Starting charge attack on '{name}'");
+        
+        // Trigger charge animation
+        if (animator != null && hasChargeParam)
+            animator.SetTrigger(CHARGE_PARAM);
+        
+        // Stop normal movement
+        if (agent != null && agent.isActiveAndEnabled)
+        {
+            agent.isStopped = true;
+            agent.ResetPath();
+        }
+        
+        // Calculate charge direction
+        Vector3 chargeDirection = (player.position - transform.position).normalized;
+        chargeDirection.y = 0;
+        
+        // Face charge direction
+        if (chargeDirection != Vector3.zero)
+            transform.rotation = Quaternion.LookRotation(chargeDirection);
+        
+        // Brief wind-up period
+        yield return new WaitForSeconds(0.5f);
+        
+        // Perform the charge
+        Vector3 startPosition = transform.position;
+        Vector3 targetPosition = startPosition + (chargeDirection * chargeDistance);
+        
+        // Ensure target position is valid
+        if (NavMesh.SamplePosition(targetPosition, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+        {
+            targetPosition = hit.position;
+        }
+        
+        float chargeDuration = chargeDistance / chargeSpeed;
+        float elapsed = 0f;
+        
+        while (elapsed < chargeDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / chargeDuration;
+            
+            Vector3 newPosition = Vector3.Lerp(startPosition, targetPosition, t);
+            transform.position = newPosition;
+            
+            // Check for collision with player during charge
+            if (player != null)
+            {
+                float distanceToPlayer = Vector3.Distance(transform.position, player.position);
+                if (distanceToPlayer <= 2f) // Charge hit radius
+                {
+                    var playerHealth = player.GetComponent<PlayerHealth>();
+                    if (playerHealth != null)
+                    {
+                        playerHealth.TakeDamage(chargeDamage);
+                        Debug.Log($"Tank enemy charge hit player for {chargeDamage} damage!");
+                    }
+                    break; // Stop charging after hitting player
+                }
+            }
+            
+            yield return null;
+        }
+        
+        // Ensure final position
+        transform.position = targetPosition;
+        
+        // Recovery period
+        isRecovering = true;
+        Debug.Log($"TankEnemy: Charge complete, recovering for {chargeRecoveryTime} seconds");
+        
+        yield return new WaitForSeconds(chargeRecoveryTime);
+        
+        // Resume normal behavior
+        isCharging = false;
+        isRecovering = false;
+        
+        if (agent != null && agent.isActiveAndEnabled)
+        {
+            agent.isStopped = false;
+        }
+        
+        Debug.Log($"TankEnemy: Charge recovery complete on '{name}'");
     }
     
     void ResetAttack()
@@ -311,11 +393,11 @@ public class SimpleEnemy : MonoBehaviour
         if (isDead) return;
         
         health -= damage;
-        Debug.Log($"Enemy took {damage} damage. Health: {health:F1}/{100:F1}");
+        Debug.Log($"Tank Enemy took {damage} damage. Health: {health:F1}/{maxHealth:F1}");
         
         if (health <= 0)
         {
-            Debug.Log($"Enemy died after taking {damage} damage");
+            Debug.Log($"Tank Enemy died after taking {damage} damage");
             Die();
         }
     }
@@ -323,6 +405,8 @@ public class SimpleEnemy : MonoBehaviour
     public void Die()
     {
         isDead = true;
+        isCharging = false;
+        isRecovering = false;
         
         // Stop movement
         if (agent != null)
@@ -334,24 +418,20 @@ public class SimpleEnemy : MonoBehaviour
         }
             
         // Trigger death animation
-        if (animator != null)
-        {
-            if (hasDeathParam)
-                animator.SetTrigger(DEATH_PARAM);
-        }
+        if (animator != null && hasDeathParam)
+            animator.SetTrigger(DEATH_PARAM);
         
-        // Snap zombie to ground level when dying (with small delay for animation)
+        // Snap to ground
         StartCoroutine(SnapToGroundDelayed());
         
-        // Disable collider to prevent further interactions
+        // Disable collider
         Collider col = GetComponent<Collider>();
         if (col != null)
             col.enabled = false;
 
-        // Hide visuals after death animation finishes
+        // Hide visuals after death animation
         if (hideVisualsOnDeath)
         {
-            // Wait for death animation to play before hiding
             StartCoroutine(HideAfterDeathAnimation());
         }
 
@@ -365,23 +445,17 @@ public class SimpleEnemy : MonoBehaviour
             Destroy(gameObject, Mathf.Max(0f, deathDestroyDelay));
         }
 
-        Debug.Log("Enemy died!");
+        Debug.Log("Tank Enemy died!");
     }
     
     private void OnDestroy()
     {
-        // Only register death if the application is playing (not during scene unload)
         if (Application.isPlaying)
         {
-            // Find and notify EnemySpawnManager of this enemy's death
             EnemySpawnManager spawnManager = FindFirstObjectByType<EnemySpawnManager>();
             if (spawnManager != null)
             {
                 spawnManager.RegisterDeath();
-            }
-            else
-            {
-                Debug.LogWarning("SimpleEnemy: EnemySpawnManager not found when enemy died");
             }
         }
     }
@@ -389,8 +463,7 @@ public class SimpleEnemy : MonoBehaviour
     // Coroutine to hide visuals after death animation
     System.Collections.IEnumerator HideAfterDeathAnimation()
     {
-        // Wait for death animation to finish (adjust time as needed)
-        yield return new WaitForSeconds(2f);
+        yield return new WaitForSeconds(3f); // Longer for tank death
         
         var renderers = GetComponentsInChildren<Renderer>(true);
         for (int i = 0; i < renderers.Length; i++)
@@ -398,7 +471,6 @@ public class SimpleEnemy : MonoBehaviour
             renderers[i].enabled = false;
         }
 
-        // Hide any world-space UI under this enemy (health bars, etc.)
         var canvases = GetComponentsInChildren<Canvas>(true);
         for (int i = 0; i < canvases.Length; i++)
         {
@@ -406,43 +478,31 @@ public class SimpleEnemy : MonoBehaviour
         }
     }
     
-    // Coroutine to snap zombie to ground with delay
     System.Collections.IEnumerator SnapToGroundDelayed()
     {
-        // Wait for death animation to play for 1 second
         yield return new WaitForSeconds(1f);
         StartCoroutine(SmoothSnapToGround());
     }
     
-    // Smooth coroutine to gradually move zombie to ground
     System.Collections.IEnumerator SmoothSnapToGround()
     {
         Vector3 startPosition = transform.position;
         Vector3 targetPosition = startPosition;
         
-        // Find ground level
         RaycastHit hit;
         if (Physics.Raycast(transform.position + Vector3.up, Vector3.down, out hit, 10f))
         {
             targetPosition.y = hit.point.y;
-            Debug.Log($"Smoothly moving zombie to ground at Y: {hit.point.y}");
+        }
+        else if (NavMesh.SamplePosition(transform.position, out NavMeshHit navHit, 5f, NavMesh.AllAreas))
+        {
+            targetPosition.y = navHit.position.y;
         }
         else
         {
-            // Fallback: try to find NavMesh ground
-            if (NavMesh.SamplePosition(transform.position, out NavMeshHit navHit, 5f, NavMesh.AllAreas))
-            {
-                targetPosition.y = navHit.position.y;
-                Debug.Log($"Smoothly moving zombie to NavMesh ground at Y: {navHit.position.y}");
-            }
-            else
-            {
-                // No ground found, don't move
-                yield break;
-            }
+            yield break;
         }
         
-        // Smoothly move to ground over 0.5 seconds
         float duration = 0.5f;
         float elapsed = 0f;
         
@@ -450,125 +510,34 @@ public class SimpleEnemy : MonoBehaviour
         {
             elapsed += Time.deltaTime;
             float t = elapsed / duration;
-            
-            // Use smooth step for more natural movement
             t = t * t * (3f - 2f * t);
             
             transform.position = Vector3.Lerp(startPosition, targetPosition, t);
             yield return null;
         }
         
-        // Ensure final position is exact
         transform.position = targetPosition;
-        Debug.Log("Zombie smoothly moved to ground");
     }
     
-    // Delayed animator initialization for spawned enemies
     System.Collections.IEnumerator DelayedAnimatorInitialization()
     {
-        // Wait a few frames for full initialization
         yield return new WaitForEndOfFrame();
         yield return new WaitForEndOfFrame();
         
         if (animator != null)
         {
-            // Force another rebind and update
             animator.Rebind();
             animator.Update(0f);
-            
-            // Ensure proper initial state
             animator.Play("Armature|Idle", 0, 0f);
             
-            // Test all parameters
-            Debug.Log($"SimpleEnemy: Delayed init - Testing animator parameters on '{name}'");
+            Debug.Log($"TankEnemy: Delayed init - Testing animator parameters on '{name}'");
             if (hasWalkParam)
             {
                 animator.SetBool(WALK_PARAM, false);
                 Debug.Log("  - Set IsWalking to false");
             }
-            if (hasAttackParam)
-            {
-                Debug.Log("  - Attack parameter available");
-            }
-            if (hasDeathParam)
-            {
-                Debug.Log("  - Death parameter available");
-            }
             
-            Debug.Log($"SimpleEnemy: Delayed animator initialization completed for '{name}'");
-        }
-    }
-    
-    // Check if animation transition actually happened
-    System.Collections.IEnumerator CheckAnimationTransition()
-    {
-        yield return new WaitForSeconds(0.1f);
-        
-        if (animator != null)
-        {
-            var stateInfo = animator.GetCurrentAnimatorStateInfo(0);
-            string currentState = stateInfo.IsName("Armature|Walk") ? "Walking" : 
-                                 stateInfo.IsName("Armature|Idle") ? "Idle" : 
-                                 stateInfo.IsName("Armature|Attack") ? "Attack" : 
-                                 stateInfo.IsName("Armature|Die") ? "Death" : "Unknown";
-            
-            Debug.Log($"SimpleEnemy: Animation check - Current state: {currentState} (normalizedTime: {stateInfo.normalizedTime:F2}) on '{name}'");
-            
-            // If still in idle when should be walking, force the transition
-            if (stateInfo.IsName("Armature|Idle") && hasWalkParam && animator.GetBool(WALK_PARAM))
-            {
-                Debug.LogWarning($"SimpleEnemy: Forcing walk transition on '{name}' - stuck in idle!");
-                animator.Play("Armature|Walk", 0, 0f);
-            }
-        }
-    }
-    
-    // Method to ensure walking animation loops properly
-    void EnsureWalkingAnimationLoops()
-    {
-        if (animator != null && hasWalkParam)
-        {
-            // Get current walking state info
-            var stateInfo = animator.GetCurrentAnimatorStateInfo(0);
-            
-            // Check if we're in the walking state and if it's near the end
-            if (stateInfo.IsName("Armature|Walk"))
-            {
-                // If animation is near the end (90% complete), reset it to loop
-                if (stateInfo.normalizedTime >= 0.9f)
-                {
-                    animator.Play("Armature|Walk", 0, 0f);
-                    Debug.Log("Reset walking animation to loop");
-                }
-            }
-        }
-    }
-    
-    // Method to snap zombie to ground level (instant version)
-    void SnapToGround()
-    {
-        // Cast a ray downward to find the ground
-        RaycastHit hit;
-        if (Physics.Raycast(transform.position + Vector3.up, Vector3.down, out hit, 10f))
-        {
-            // Move the zombie to the ground level
-            Vector3 newPosition = transform.position;
-            newPosition.y = hit.point.y;
-            transform.position = newPosition;
-            
-            Debug.Log($"Snapped zombie to ground at Y: {hit.point.y}");
-        }
-        else
-        {
-            // Fallback: try to find NavMesh ground
-            if (NavMesh.SamplePosition(transform.position, out NavMeshHit navHit, 5f, NavMesh.AllAreas))
-            {
-                Vector3 newPosition = transform.position;
-                newPosition.y = navHit.position.y;
-                transform.position = newPosition;
-                
-                Debug.Log($"Snapped zombie to NavMesh ground at Y: {navHit.position.y}");
-            }
+            Debug.Log($"TankEnemy: Delayed animator initialization completed for '{name}'");
         }
     }
     
@@ -583,21 +552,29 @@ public class SimpleEnemy : MonoBehaviour
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, attackRange);
         
+        // Draw charge range
+        if (canCharge)
+        {
+            Gizmos.color = Color.magenta;
+            Gizmos.DrawWireSphere(transform.position, chargeDistance);
+        }
+        
         // Draw line to player if in range
         if (player != null)
         {
             float distance = Vector3.Distance(transform.position, player.position);
             if (distance <= detectionRange)
             {
-                Gizmos.color = distance <= attackRange ? Color.red : Color.yellow;
+                Gizmos.color = distance <= attackRange ? Color.red : 
+                              (distance <= chargeDistance ? Color.magenta : Color.yellow);
                 Gizmos.DrawLine(transform.position, player.position);
             }
         }
     }
 }
 
-// Local helpers
-static class SimpleEnemyAnimatorExtensions
+// Extension for animator parameter checking
+static class TankEnemyAnimatorExtensions
 {
     public static bool AnimatorHasParameter(this Animator animator, string paramName, AnimatorControllerParameterType type)
     {
