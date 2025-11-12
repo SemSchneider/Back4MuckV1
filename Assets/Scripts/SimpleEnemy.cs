@@ -13,46 +13,45 @@ public class SimpleEnemy : MonoBehaviour
     public float attackCooldown = 1.5f;
     public bool stopPushingAtAttackRange = true;
 
-	public enum DeathBehavior { Instant, TimedDelay }
-	[Header("Death Settings")]
-	public DeathBehavior deathBehavior = DeathBehavior.TimedDelay;
+    public enum DeathBehavior { Instant, TimedDelay }
+    [Header("Death Settings")]
+    public DeathBehavior deathBehavior = DeathBehavior.TimedDelay;
     public float deathDestroyDelay = 0.5f;
     public bool hideVisualsOnDeath = true;
-    
+
     [Header("Components")]
     public Transform player;
     public NavMeshAgent agent;
     public Animator animator;
-    
+
     private float lastAttackTime;
     private bool isDead = false;
     private bool isAttacking = false;
     private bool hasWalkParam = false;
     private bool hasAttackParam = false;
     private bool hasDeathParam = false;
-    
+
     [Header("Animator Runtime Settings")]
     public bool forceAnimatorAlwaysAnimate = true;
     public bool disableAnimatorRootMotion = true;
-    
+
     // Animation parameter names
     private const string WALK_PARAM = "IsWalking";
     private const string ATTACK_PARAM = "Attack";
     private const string DEATH_PARAM = "Death";
-    
+
     void Start()
     {
-        // Initialize health from maxHealth at start
+        // Initialize health
         health = Mathf.Clamp(maxHealth, 1f, Mathf.Infinity);
-        // Find player if not assigned
+
         if (player == null)
         {
             GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
             if (playerObj != null)
                 player = playerObj.transform;
         }
-        
-        // Get components if not assigned
+
         if (agent == null)
             agent = GetComponent<NavMeshAgent>();
         if (animator == null)
@@ -60,81 +59,33 @@ public class SimpleEnemy : MonoBehaviour
         if (animator == null)
             animator = GetComponentInChildren<Animator>();
 
-        // Cache animator parameter availability and warn if missing
-        if (animator == null)
+        if (animator != null)
         {
-            Debug.LogWarning("SimpleEnemy: No Animator found on this GameObject or its children. Animations will not play.");
-        }
-        else
-        {
-            // Enforce safe runtime settings for spawned prefabs
             if (forceAnimatorAlwaysAnimate)
                 animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             if (disableAnimatorRootMotion)
                 animator.applyRootMotion = false;
-            animator.enabled = true;
-            animator.speed = 1f;
-            if (animator.layerCount > 0)
-                animator.SetLayerWeight(0, 1f);
-
-            var controllerName = animator.runtimeAnimatorController != null ? animator.runtimeAnimatorController.name : "<None>";
-            Debug.Log($"SimpleEnemy: Animator='{animator.name}', Controller='{controllerName}' on '{name}'");
-
-            // Log initial state for diagnostics
-            if (animator.layerCount > 0)
-            {
-                var st = animator.GetCurrentAnimatorStateInfo(0);
-                Debug.Log($"SimpleEnemy: Initial state normalizedTime={st.normalizedTime:F2} hash={st.shortNameHash} on '{name}'");
-            }
 
             hasWalkParam = animator.AnimatorHasParameter(WALK_PARAM, AnimatorControllerParameterType.Bool);
             hasAttackParam = animator.AnimatorHasParameter(ATTACK_PARAM, AnimatorControllerParameterType.Trigger);
             hasDeathParam = animator.AnimatorHasParameter(DEATH_PARAM, AnimatorControllerParameterType.Trigger);
-
-            if (!hasWalkParam)
-                Debug.LogWarning($"SimpleEnemy: Animator missing Bool parameter '{WALK_PARAM}'. Walking state won't switch.");
-            if (!hasAttackParam)
-                Debug.LogWarning($"SimpleEnemy: Animator missing Trigger parameter '{ATTACK_PARAM}'. Attack animation won't play.");
-            if (!hasDeathParam)
-                Debug.LogWarning($"SimpleEnemy: Animator missing Trigger parameter '{DEATH_PARAM}'. Death animation won't play.");
-            if (animator.runtimeAnimatorController == null)
-                Debug.LogWarning("SimpleEnemy: Animator has no Controller assigned. Assign your Zombie.controller (or equivalent).");
         }
-            
-        // Configure NavMesh Agent
+
         if (agent != null)
         {
             agent.speed = moveSpeed;
-            agent.stoppingDistance = Mathf.Max(0f, attackRange - 0.5f); // Stop slightly before attack range
-            agent.acceleration = 8f; // Faster acceleration
-            agent.angularSpeed = 120f; // Faster turning
-            agent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
-        }
-        
-        // Configure Rigidbody to prevent falling
-        Rigidbody rb = GetComponent<Rigidbody>();
-        if (rb != null)
-        {
-            rb.isKinematic = true; // Prevents physics interference
-            rb.useGravity = false; // NavMesh handles movement
-        }
+            agent.stoppingDistance = Mathf.Max(0f, attackRange - 0.5f);
+            agent.acceleration = 8f;
+            agent.angularSpeed = 120f;
 
-        // Calibrate agent vertical placement so the enemy sits on the NavMesh
-        if (agent != null)
-        {
             var capsule = GetComponent<CapsuleCollider>();
             if (capsule != null)
             {
-                // Ensure agent size is at least collider size
                 agent.height = Mathf.Max(agent.height, capsule.height);
                 agent.radius = Mathf.Max(agent.radius, capsule.radius);
-
-                // If pivot is at center (capsule.center.y ≈ 0), offset should be half height
-                // General formula to bring collider bottom to NavMesh surface
                 agent.baseOffset = Mathf.Max(0f, (capsule.height * 0.5f) - capsule.center.y);
             }
 
-            // Snap onto NavMesh at start to avoid half-sinking from import pivots
             if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 2f, NavMesh.AllAreas))
             {
                 Vector3 snapped = hit.position;
@@ -142,154 +93,110 @@ public class SimpleEnemy : MonoBehaviour
                 transform.position = snapped;
             }
         }
+
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+            rb.useGravity = false;
+        }
     }
-    
+
     void Update()
     {
         if (isDead) return;
-        
         if (player == null) return;
-        
+
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
-        
-        // Check if player is in detection range
+
         if (distanceToPlayer <= detectionRange)
         {
-            // Face the player
             Vector3 lookDirection = (player.position - transform.position).normalized;
-            lookDirection.y = 0; // Keep enemy upright
+            lookDirection.y = 0;
             if (lookDirection != Vector3.zero)
-            {
                 transform.rotation = Quaternion.LookRotation(lookDirection);
-            }
-            
-            // Check if in attack range
+
             if (distanceToPlayer <= attackRange)
             {
-                // Stop moving and attack
                 if (agent != null && agent.isActiveAndEnabled)
                 {
                     if (stopPushingAtAttackRange)
-                    {
                         agent.isStopped = true;
-                    }
                     agent.ResetPath();
                     agent.velocity = Vector3.zero;
                     agent.SetDestination(transform.position);
                 }
-                    
-                if (animator != null)
-                {
-                    if (hasWalkParam)
-                        animator.SetBool(WALK_PARAM, false);
-                }
-                
-                // Attack if cooldown is over
+
+                if (animator != null && hasWalkParam)
+                    animator.SetBool(WALK_PARAM, false);
+
                 if (Time.time - lastAttackTime >= attackCooldown && !isAttacking)
-                {
                     Attack();
-                }
             }
             else
             {
-                // Move towards player
                 if (agent != null && agent.isActiveAndEnabled)
                 {
                     agent.isStopped = false;
                     agent.SetDestination(player.position);
-                    if (animator != null)
-                    {
-                        if (hasWalkParam)
-                            animator.SetBool(WALK_PARAM, true);
-                    }
+                    if (animator != null && hasWalkParam)
+                        animator.SetBool(WALK_PARAM, true);
                 }
             }
         }
         else
         {
-            // Player not in range, stop moving
             if (agent != null && agent.isActiveAndEnabled)
             {
                 agent.isStopped = false;
                 agent.SetDestination(transform.position);
                 agent.velocity = Vector3.zero;
             }
-            if (animator != null)
-            {
-                if (hasWalkParam)
-                    animator.SetBool(WALK_PARAM, false);
-            }
+            if (animator != null && hasWalkParam)
+                animator.SetBool(WALK_PARAM, false);
         }
     }
-    
+
     void Attack()
     {
         isAttacking = true;
         lastAttackTime = Time.time;
-        
-        // Trigger attack animation
-        if (animator != null)
-        {
-            if (hasAttackParam)
-                animator.SetTrigger(ATTACK_PARAM);
-        }
-        
-        // Deal damage to player (check if player is still in range)
+
+        if (animator != null && hasAttackParam)
+            animator.SetTrigger(ATTACK_PARAM);
+
         if (player != null)
         {
             float distanceToPlayer = Vector3.Distance(transform.position, player.position);
             if (distanceToPlayer <= attackRange)
             {
-                // Try to get player health component
                 var playerHealth = player.GetComponent<PlayerHealth>();
                 if (playerHealth != null)
-                {
                     playerHealth.TakeDamage(attackDamage);
-                    Debug.Log($"Enemy attacked player for {attackDamage} damage!");
-                }
-                else
-                {
-                    Debug.LogWarning("Player hit! (No PlayerHealth component found on player)");
-                }
-            }
-            else
-            {
-                Debug.Log("Enemy attack missed - player too far away");
             }
         }
-        else
-        {
-            Debug.LogWarning("Enemy attack failed - no player reference");
-        }
-        
-        // Reset attack state after animation
+
         Invoke(nameof(ResetAttack), 1f);
     }
-    
+
     void ResetAttack()
     {
         isAttacking = false;
     }
-    
+
     public void TakeDamage(float damage)
     {
         if (isDead) return;
-        
+
         health -= damage;
-        Debug.Log($"Enemy took {damage} damage. Health: {health:F1}/{100:F1}");
-        
         if (health <= 0)
-        {
-            Debug.Log($"Enemy died after taking {damage} damage");
             Die();
-        }
     }
-    
+
     void Die()
     {
         isDead = true;
-        
-        // Stop movement
+
         if (agent != null)
         {
             agent.isStopped = true;
@@ -297,37 +204,31 @@ public class SimpleEnemy : MonoBehaviour
             agent.velocity = Vector3.zero;
             agent.enabled = false;
         }
-            
-        // Trigger death animation
-        if (animator != null)
-        {
-            if (hasDeathParam)
-                animator.SetTrigger(DEATH_PARAM);
-        }
-        
-        // Disable collider to prevent further interactions
+
+        if (animator != null && hasDeathParam)
+            animator.SetTrigger(DEATH_PARAM);
+
         Collider col = GetComponent<Collider>();
         if (col != null)
             col.enabled = false;
 
-        // Optionally hide visuals immediately (keeps gameplay snappy)
         if (hideVisualsOnDeath)
         {
             var renderers = GetComponentsInChildren<Renderer>(true);
-            for (int i = 0; i < renderers.Length; i++)
-            {
-                renderers[i].enabled = false;
-            }
+            foreach (var r in renderers)
+                r.enabled = false;
 
-            // Hide any world-space UI under this enemy (health bars, etc.)
             var canvases = GetComponentsInChildren<Canvas>(true);
-            for (int i = 0; i < canvases.Length; i++)
-            {
-                canvases[i].enabled = false;
-            }
+            foreach (var c in canvases)
+                c.enabled = false;
         }
 
-        // Destroy behavior
+        // <-- PUNTENSYSTEEM TOEGEVOEGD HIER
+        if (ScoreManager.Instance != null)
+        {
+            ScoreManager.Instance.AddPoints(10); // 10 punten per kill
+        }
+
         if (deathBehavior == DeathBehavior.Instant)
         {
             Destroy(gameObject);
@@ -336,22 +237,16 @@ public class SimpleEnemy : MonoBehaviour
         {
             Destroy(gameObject, Mathf.Max(0f, deathDestroyDelay));
         }
-
-        Debug.Log("Enemy died!");
     }
-    
-    // Visual debugging
+
     void OnDrawGizmosSelected()
     {
-        // Draw detection range
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, detectionRange);
-        
-        // Draw attack range
+
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, attackRange);
-        
-        // Draw line to player if in range
+
         if (player != null)
         {
             float distance = Vector3.Distance(transform.position, player.position);
@@ -370,10 +265,8 @@ static class SimpleEnemyAnimatorExtensions
     public static bool AnimatorHasParameter(this Animator animator, string paramName, AnimatorControllerParameterType type)
     {
         if (animator == null || string.IsNullOrEmpty(paramName)) return false;
-        var parameters = animator.parameters;
-        for (int i = 0; i < parameters.Length; i++)
+        foreach (var p in animator.parameters)
         {
-            var p = parameters[i];
             if (p.type == type && p.name == paramName)
                 return true;
         }
