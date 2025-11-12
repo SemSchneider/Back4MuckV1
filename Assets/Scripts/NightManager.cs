@@ -63,4 +63,20 @@ public class NightManager : MonoBehaviour
 
         wasNight = isNightNow;
     }
+
+    /// <summary>
+    /// Manually starts the next night by setting the time to nighttime
+    /// </summary>
+    public void StartNight()
+    {
+        if (dayNightCycle == null)
+        {
+            Debug.LogError("NightManager: Cannot start night - dayNightCycle reference is null!");
+            return;
+        }
+
+        // Force nighttime (18:00 = 18f)
+        dayNightCycle.timeOfDay = 18f;
+        Debug.Log("NightManager: Manually set time to nighttime (18:00)");
+    }
 }
