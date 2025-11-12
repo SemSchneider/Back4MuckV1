@@ -660,7 +660,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a626acb4712d6a24da936aa1edddc75a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  currentNight: 1
+  currentNight: 0
   dayNightCycle: {fileID: 1570689922}
   OnNightStarted:
     m_PersistentCalls:
@@ -713,6 +713,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   scoreText: {fileID: 1203612414}
+  logSubscription: 1
 --- !u!4 &874054076
 Transform:
   m_ObjectHideFlags: 0
@@ -3612,7 +3613,6 @@ SceneRoots:
   - {fileID: 1570689920}
   - {fileID: 894822543}
   - {fileID: 107873846}
-  - {fileID: 1813464727}
   - {fileID: 4307244625685343081}
   - {fileID: 1418238217}
   - {fileID: 1925793933}
@@ -3624,3 +3624,4 @@ SceneRoots:
   - {fileID: 700788715}
   - {fileID: 1406853710}
   - {fileID: 874054076}
+  - {fileID: 1813464727}
