@@ -56,9 +56,12 @@ public class EnemyArchetype : ScriptableObject
             Debug.LogWarning($"EnemyArchetype '{archetypeName}': Cost must be greater than 0!");
         }
         
-        if (spawnWeight <= 0)
+        if (spawnWeight <= 0.001f) // Use small epsilon instead of 0
         {
-            Debug.LogWarning($"EnemyArchetype '{archetypeName}': Spawn weight must be greater than 0!");
+            Debug.LogWarning($"EnemyArchetype '{archetypeName}': Spawn weight ({spawnWeight}) must be greater than 0!");
         }
+        
+        // Debug log to see actual values
+        Debug.Log($"EnemyArchetype '{archetypeName}' validation: Cost={cost}, SpawnWeight={spawnWeight}");
     }
 }

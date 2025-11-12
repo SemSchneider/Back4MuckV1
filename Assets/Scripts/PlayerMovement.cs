@@ -1,35 +1,145 @@
-using NUnit.Framework;
 using UnityEngine;
 using System.Collections;
 
+/// <summary>
+/// Handles player movement including walking, running, jumping, and speed modifiers
+/// </summary>
 public class PlayerMovement : MonoBehaviour
 {
-    private CharacterController controller;
+    #region Movement Configuration
     
     [Header("Speed Settings")]
-    [SerializeField] private float speed = 12f;
+    [SerializeField] private float baseSpeed = 12f;
     [SerializeField] private float sprintSpeed = 18f;
-    private float currentSpeed;
-    private Coroutine speedMultiplierRoutine;
+    
+    [Header("Physics Settings")]
     public float gravity = -9.81f * 2;
     public float jumpHeight = 3f;
 
+    [Header("Ground Detection")]
     public Transform groundCheck;
     public float groundDistance = 0.4f;
     public LayerMask groundMask;
+    
+    #endregion
 
-    Vector3 velocity;
-    bool isGrounded;
-    bool isMoving;
+    #region Private Fields
+    
+    private CharacterController controller;
+    private float currentSpeed;
+    private Coroutine speedMultiplierRoutine;
+    
+    private Vector3 velocity;
+    private bool isGrounded;
+    private bool isMoving;
+    private Vector3 lastPosition = Vector3.zero;
+    
+    #endregion
 
-    private Vector3 lastPosition = new Vector3(0f,0f,0f);
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    #region Unity Lifecycle
+    
     void Start()
     {
-        controller = GetComponent<CharacterController>();
-        currentSpeed = speed; // Initialize current speed
+        InitializeMovement();
     }
 
+    void Update()
+    {
+        UpdateGroundedState();
+        HandleMovementInput();
+        HandleJumpInput();
+        ApplyGravity();
+        UpdateMovingState();
+    }
+    
+    #endregion
+
+    #region Initialization
+    
+    private void InitializeMovement()
+    {
+        controller = GetComponent<CharacterController>();
+        currentSpeed = baseSpeed; // Initialize current speed
+    }
+    
+    #endregion
+
+    #region Ground Detection
+    
+    private void UpdateGroundedState()
+    {
+        isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
+        
+        if (isGrounded && velocity.y < 0)
+        {
+            velocity.y = -2f;
+        }
+    }
+    
+    #endregion
+
+    #region Movement Input Handling
+    
+    private void HandleMovementInput()
+    {
+        float x = Input.GetAxis("Horizontal");
+        float z = Input.GetAxis("Vertical");
+
+        Vector3 move = transform.right * x + transform.forward * z;
+
+        // Hold Left Shift to sprint while grounded
+        float appliedSpeed = ShouldSprint(x, z) ? sprintSpeed : currentSpeed;
+        
+        controller.Move(move * appliedSpeed * Time.deltaTime);
+    }
+    
+    private bool ShouldSprint(float x, float z)
+    {
+        return Input.GetKey(KeyCode.LeftShift) && 
+               isGrounded && 
+               (x != 0f || z != 0f);
+    }
+    
+    private void HandleJumpInput()
+    {
+        if (Input.GetButtonDown("Jump") && isGrounded)
+        {
+            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+        }
+    }
+    
+    #endregion
+
+    #region Physics
+    
+    private void ApplyGravity()
+    {
+        velocity.y += gravity * Time.deltaTime;
+        controller.Move(velocity * Time.deltaTime);
+    }
+    
+    #endregion
+
+    #region Movement State Tracking
+    
+    private void UpdateMovingState()
+    {
+        if (lastPosition != transform.position && isGrounded)
+        {
+            isMoving = true;
+        }
+        else
+        {
+            isMoving = false;
+        }
+
+        lastPosition = transform.position;
+    }
+    
+    #endregion
+
+    #region Speed Modifiers
+    
     public void ApplySpeedMultiplier(float multiplier, float duration)
     {
         if (duration <= 0f)
@@ -45,7 +155,7 @@ public class PlayerMovement : MonoBehaviour
         }
 
         // Apply new multiplier
-        currentSpeed = speed * multiplier;
+        currentSpeed = baseSpeed * multiplier;
         
         // Start new timer
         speedMultiplierRoutine = StartCoroutine(ResetSpeedAfterDelay(duration));
@@ -54,46 +164,17 @@ public class PlayerMovement : MonoBehaviour
     private IEnumerator ResetSpeedAfterDelay(float delay)
     {
         yield return new WaitForSeconds(delay);
-        currentSpeed = speed;
+        currentSpeed = baseSpeed;
         speedMultiplierRoutine = null;
     }
+    
+    #endregion
 
-    // Update is called once per frame
-    void Update()
-    {
-        isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
-        if (isGrounded && velocity.y < 0)
-        {
-            velocity.y = -2f;
-        }
-
-        float x = Input.GetAxis("Horizontal");
-        float z = Input.GetAxis("Vertical");
-
-		Vector3 move = transform.right * x + transform.forward * z;
-
-		// hold Left Shift to sprint while grounded
-		float appliedSpeed = (Input.GetKey(KeyCode.LeftShift) && isGrounded && (x != 0f || z != 0f)) ? sprintSpeed : speed;
-		controller.Move(move * appliedSpeed * Time.deltaTime);
-
-        if (Input.GetButtonDown("Jump") && isGrounded)
-        {
-            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
-        }
-
-        velocity.y += gravity * Time.deltaTime;
-        controller.Move(velocity * Time.deltaTime);
-
-        if (lastPosition != gameObject.transform.position && isGrounded == true)
-        {
-            isMoving = true;
-            // lastPosition = transform.position;
-        }
-        else
-        {
-            isMoving = false;
-        }
-
-        lastPosition = transform.position;
-    }
+    #region Public Properties
+    
+    public bool IsMoving => isMoving;
+    public bool IsGrounded => isGrounded;
+    public float CurrentSpeed => currentSpeed;
+    
+    #endregion
 }

@@ -86,7 +86,7 @@ public class EnemySpawnManager : MonoBehaviour
         if (spawnPointGroup == null)
         {
             LogDebug("No SpawnPointGroup assigned - searching for one in scene");
-            spawnPointGroup = FindObjectOfType<SpawnPointGroup>();
+            spawnPointGroup = FindFirstObjectByType<SpawnPointGroup>();
 
             if (spawnPointGroup == null)
             {
@@ -346,6 +346,12 @@ public class EnemySpawnManager : MonoBehaviour
         // Check if we have valid archetypes first
         var validArchetypes = enemyArchetypes?.Where(a => a != null && a.EnemyPrefab != null).ToArray();
         
+        // Check if we have valid archetypes first
+        validArchetypes = enemyArchetypes?.Where(a => a != null && a.EnemyPrefab != null).ToArray();
+        
+        LogDebug($"=== BUDGET PLANNING START ===");
+        LogDebug($"Valid archetypes found: {validArchetypes?.Length ?? 0} out of {enemyArchetypes?.Length ?? 0} configured");
+        
         if (validArchetypes == null || validArchetypes.Length == 0)
         {
             // No valid archetypes - use fallback system
@@ -406,7 +412,7 @@ public class EnemySpawnManager : MonoBehaviour
             {
                 spawnQueue.Add(selectedArchetype);
                 budgetUsed += selectedArchetype.Cost;
-                LogDebug($"Selected {selectedArchetype.ArchetypeName} (cost: {selectedArchetype.Cost}), total budget used: {budgetUsed}");
+                LogDebug($"Selected {selectedArchetype.ArchetypeName} (cost: {selectedArchetype.Cost}), budget used: {budgetUsed}/{currentBudget}");
             }
             
             attempts++;
@@ -516,6 +522,25 @@ public class EnemySpawnManager : MonoBehaviour
             enemyName = archetype.ArchetypeName;
         }
         
+        LogDebug($"=== SPAWNING ENEMY ===");
+        LogDebug($"Archetype: {(archetype != null ? archetype.ArchetypeName : "NULL")}");
+        
+        if (archetype != null)
+        {
+            LogDebug($"Archetype.EnemyPrefab: {(archetype.EnemyPrefab != null ? archetype.EnemyPrefab.name : "NULL")}");
+            if (archetype.EnemyPrefab != null)
+            {
+                // Check what components are on the prefab
+                var simpleEnemy = archetype.EnemyPrefab.GetComponent<SimpleEnemy>();
+                var tankEnemy = archetype.EnemyPrefab.GetComponent<TankEnemy>();
+                var fastEnemy = archetype.EnemyPrefab.GetComponent<FastEnemy>();
+                
+                LogDebug($"Prefab components: SimpleEnemy={simpleEnemy != null}, TankEnemy={tankEnemy != null}, FastEnemy={fastEnemy != null}");
+            }
+        }
+        
+        LogDebug($"Prefab to spawn: {(prefabToSpawn != null ? prefabToSpawn.name : "NULL")}");
+        
         Transform spawnPoint = spawnPointGroup.GetRandomSpawnPoint();
         if (spawnPoint == null)
         {
@@ -526,15 +551,20 @@ public class EnemySpawnManager : MonoBehaviour
         // Spawn the enemy
         GameObject newEnemy = Instantiate(prefabToSpawn, spawnPoint.position, spawnPoint.rotation);
         
-        // Set up enemy reference to this spawn manager
-        SimpleEnemy enemyScript = newEnemy.GetComponent<SimpleEnemy>();
+        // Check for any enemy component (works with all enemy types)
+        MonoBehaviour enemyScript = newEnemy.GetComponent<SimpleEnemy>();
+        if (enemyScript == null)
+            enemyScript = newEnemy.GetComponent<TankEnemy>();
+        if (enemyScript == null)
+            enemyScript = newEnemy.GetComponent<FastEnemy>();
+        
         if (enemyScript != null)
         {
-            LogDebug($"Spawned {enemyName} '{newEnemy.name}' at {spawnPoint.position}");
+            LogDebug($"Spawned {enemyName} '{newEnemy.name}' with {enemyScript.GetType().Name} component");
         }
         else
         {
-            Debug.LogWarning($"Spawned {enemyName} '{newEnemy.name}' but no SimpleEnemy component found!");
+            Debug.LogWarning($"Spawned {enemyName} '{newEnemy.name}' but no enemy component found!");
         }
         
         // Update tracking
@@ -566,15 +596,20 @@ public class EnemySpawnManager : MonoBehaviour
         GameObject newEnemy = Instantiate(enemyPrefab, spawnPoint.position, spawnPoint.rotation);
         
         // Set up enemy reference to this spawn manager
-        SimpleEnemy enemyScript = newEnemy.GetComponent<SimpleEnemy>();
+        MonoBehaviour enemyScript = newEnemy.GetComponent<SimpleEnemy>();
+        if (enemyScript == null)
+            enemyScript = newEnemy.GetComponent<TankEnemy>();
+        if (enemyScript == null)
+            enemyScript = newEnemy.GetComponent<FastEnemy>();
+            
         if (enemyScript != null)
         {
             // You can add any enemy setup here if needed
-            LogDebug($"Spawned enemy '{newEnemy.name}' at {spawnPoint.position}");
+            LogDebug($"Spawned enemy '{newEnemy.name}' with {enemyScript.GetType().Name} component at {spawnPoint.position}");
         }
         else
         {
-            Debug.LogWarning($"Spawned enemy '{newEnemy.name}' but no SimpleEnemy component found!");
+            Debug.LogWarning($"Spawned enemy '{newEnemy.name}' but no enemy component found!");
         }
         
         // Update tracking
@@ -608,7 +643,7 @@ public class EnemySpawnManager : MonoBehaviour
     /// </summary>
     private void NotifyHUDOfCountChange()
     {
-        NightHUD hud = FindObjectOfType<NightHUD>();
+        NightHUD hud = FindFirstObjectByType<NightHUD>();
         if (hud != null)
         {
             hud.UpdateEnemyCounts();
@@ -681,6 +716,25 @@ public class EnemySpawnManager : MonoBehaviour
     public void PreviewSpawnCounts()
     {
         Debug.Log("=== Enemy Spawn Preview ===");
+        
+        // Diagnostic: Check archetype array
+        Debug.Log($"=== ARCHETYPE DIAGNOSTIC ===");
+        Debug.Log($"Enemy Archetypes Array Size: {enemyArchetypes?.Length ?? 0}");
+        if (enemyArchetypes != null)
+        {
+            for (int i = 0; i < enemyArchetypes.Length; i++)
+            {
+                var arch = enemyArchetypes[i];
+                if (arch == null)
+                {
+                    Debug.Log($"  Slot {i}: NULL");
+                }
+                else
+                {
+                    Debug.Log($"  Slot {i}: {arch.ArchetypeName} - Cost: {arch.Cost}, Weight: {arch.SpawnWeight}, Prefab: {(arch.EnemyPrefab != null ? arch.EnemyPrefab.name : "NULL")}");
+                }
+            }
+        }
         
         if (useBudgetSystem)
         {

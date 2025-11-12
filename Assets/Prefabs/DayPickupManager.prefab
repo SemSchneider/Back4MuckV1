@@ -45,13 +45,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   healthPickup:
-    pickupPrefab: {fileID: 0}
+    pickupPrefab: {fileID: 1000000, guid: 5f46117efba922e4299dd72248494460, type: 3}
     minCount: 1
     maxCount: 3
     minSpawnDistance: 10
     maxSpawnDistance: 50
   speedBoostPickup:
-    pickupPrefab: {fileID: 0}
+    pickupPrefab: {fileID: 1000000, guid: 8dcc9fbd9cf724b47b3cbf385b52599f, type: 3}
     minCount: 1
     maxCount: 3
     minSpawnDistance: 10

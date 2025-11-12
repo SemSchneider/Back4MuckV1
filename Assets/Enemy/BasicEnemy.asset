@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1a0332478c1a33b468ff5d6cea6b258e, type: 3}
-  m_Name: Enemy1st
+  m_Name: BasicEnemy
   m_EditorClassIdentifier: 
   archetypeName: Basic Enemy
   enemyPrefab: {fileID: 1541928481943697490, guid: 1e5873bae5e7e3845a9a4a887c4c94f8, type: 3}
   cost: 1
-  spawnWeight: 3
+  spawnWeight: 1
   description: Basic enemy archetype

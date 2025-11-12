@@ -455,8 +455,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxHealth: 100
   health: 100
-  moveSpeed: 3.5
-  detectionRange: 40
+  moveSpeed: 5
+  detectionRange: 100
   attackRange: 2
   attackDamage: 25
   attackCooldown: 1
@@ -467,6 +467,11 @@ MonoBehaviour:
   player: {fileID: 0}
   agent: {fileID: 5555099782219563273}
   animator: {fileID: 165161039203997780}
+  bloodHitEffectPrefab: {fileID: 0}
+  hitEffectSpawnPoint: {fileID: 0}
+  enableHitFeedback: 1
+  hitFeedbackDuration: 0.3
+  hitFlashColor: {r: 1, g: 0, b: 0, a: 1}
   forceAnimatorAlwaysAnimate: 1
   disableAnimatorRootMotion: 1
 --- !u!95 &165161039203997780
@@ -479,7 +484,7 @@ Animator:
   m_GameObject: {fileID: 1541928481943697490}
   m_Enabled: 1
   m_Avatar: {fileID: 9000000, guid: 5ecee190eb34e6a459d06dc6d737698d, type: 3}
-  m_Controller: {fileID: 9100000, guid: 20506232ead6cb34ba80e2701498677c, type: 2}
+  m_Controller: {fileID: 9100000, guid: 5c502c66744cde849a3b655d9fda6123, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
