@@ -352,7 +352,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &107873843
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -433,7 +433,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxHealth: 100
   currentHealth: 100
-  healthBar: {fileID: 0}
+  healthBar: {fileID: 1284399932}
   healthText: {fileID: 0}
   deathScreen: {fileID: 0}
   respawnDelay: 3
@@ -583,6 +583,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 4616089825748921907, guid: e10bc9236107d274383b423332fa2abf, type: 3}
+      propertyPath: flashlight
+      value: 
+      objectReference: {fileID: 1025385244}
     - target: {fileID: 6165975191431392505, guid: e10bc9236107d274383b423332fa2abf, type: 3}
       propertyPath: m_LocalPosition.x
       value: 27.09
@@ -626,6 +630,10 @@ PrefabInstance:
     - target: {fileID: 6523109705186882536, guid: e10bc9236107d274383b423332fa2abf, type: 3}
       propertyPath: m_Name
       value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 6523109705186882536, guid: e10bc9236107d274383b423332fa2abf, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6881441383336693426, guid: e10bc9236107d274383b423332fa2abf, type: 3}
       propertyPath: healthBar
@@ -2679,16 +2687,16 @@ PrefabInstance:
       objectReference: {fileID: 2005958171}
     - target: {fileID: 7187340202511678755, guid: 6dcf5932f9e5d5642aed21092803a2a4, type: 3}
       propertyPath: enemyArchetypes.Array.size
-      value: 3
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 7187340202511678755, guid: 6dcf5932f9e5d5642aed21092803a2a4, type: 3}
       propertyPath: 'enemyArchetypes.Array.data[0]'
       value: 
-      objectReference: {fileID: 11400000, guid: e927c81ceb75c7245b270b943ca95a44, type: 2}
+      objectReference: {fileID: 11400000, guid: 18eb0c092ee58464a86dbcfcbbe0f68f, type: 2}
     - target: {fileID: 7187340202511678755, guid: 6dcf5932f9e5d5642aed21092803a2a4, type: 3}
       propertyPath: 'enemyArchetypes.Array.data[1]'
       value: 
-      objectReference: {fileID: 11400000, guid: 18eb0c092ee58464a86dbcfcbbe0f68f, type: 2}
+      objectReference: {fileID: 11400000, guid: 6840a9a8c9c3ef740a5b82475897af8b, type: 2}
     - target: {fileID: 7187340202511678755, guid: 6dcf5932f9e5d5642aed21092803a2a4, type: 3}
       propertyPath: 'enemyArchetypes.Array.data[2]'
       value: 

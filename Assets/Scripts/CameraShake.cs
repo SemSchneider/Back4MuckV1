@@ -2,7 +2,8 @@ using UnityEngine;
 using System.Collections;
 
 /// <summary>
-/// Camera shake system for impact effects like taking damage
+/// Camera shake system for visual impact effects like taking damage
+/// Uses rotation-only shake to avoid interfering with player position
 /// </summary>
 public class CameraShake : MonoBehaviour
 {
@@ -18,7 +19,6 @@ public class CameraShake : MonoBehaviour
     public AnimationCurve flashDecay = AnimationCurve.EaseInOut(0, 1, 1, 0);
     
     // Internal state
-    private Vector3 originalPosition;
     private Quaternion originalRotation;
     private bool isShaking = false;
     
@@ -45,7 +45,6 @@ public class CameraShake : MonoBehaviour
         }
         
         // Store original transform
-        originalPosition = transform.localPosition;
         originalRotation = transform.localRotation;
         
         // Create damage flash overlay
@@ -92,7 +91,7 @@ public class CameraShake : MonoBehaviour
     }
     
     /// <summary>
-    /// Shake the camera with specified intensity and duration
+    /// Shake the camera with specified intensity and duration (rotation only)
     /// </summary>
     public void Shake(float intensity = -1f, float duration = -1f)
     {
@@ -131,6 +130,9 @@ public class CameraShake : MonoBehaviour
         isShaking = true;
         float elapsed = 0f;
         
+        // Store the current rotation at the start of shake
+        Quaternion startRotation = transform.localRotation;
+        
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
@@ -141,30 +143,22 @@ public class CameraShake : MonoBehaviour
             // Apply decay curve
             float currentIntensity = intensity * shakeDecay.Evaluate(progress);
             
-            // Generate random shake offset
-            Vector3 shakeOffset = new Vector3(
-                Random.Range(-1f, 1f) * currentIntensity,
-                Random.Range(-1f, 1f) * currentIntensity,
-                0f
-            );
-            
-            // Apply shake to position
-            transform.localPosition = originalPosition + shakeOffset;
-            
-            // Optional: Add slight rotation shake
+            // Generate random rotation shake only (no position changes)
             Vector3 rotationShake = new Vector3(
                 Random.Range(-1f, 1f) * currentIntensity * 2f,
                 Random.Range(-1f, 1f) * currentIntensity * 2f,
                 Random.Range(-1f, 1f) * currentIntensity * 1f
             );
-            transform.localRotation = originalRotation * Quaternion.Euler(rotationShake);
+            
+            // Apply shake to rotation only - no position changes
+            transform.localRotation = startRotation * Quaternion.Euler(rotationShake);
             
             yield return null;
         }
         
-        // Reset to original position
-        transform.localPosition = originalPosition;
-        transform.localRotation = originalRotation;
+        // Reset to original rotation only
+        transform.localRotation = startRotation;
+        
         isShaking = false;
     }
     
@@ -197,13 +191,12 @@ public class CameraShake : MonoBehaviour
     }
     
     /// <summary>
-    /// Update original position if camera parent moves
+    /// Update original rotation if camera parent rotates
     /// </summary>
-    public void UpdateOriginalPosition()
+    public void UpdateOriginalRotation()
     {
         if (!isShaking)
         {
-            originalPosition = transform.localPosition;
             originalRotation = transform.localRotation;
         }
     }
