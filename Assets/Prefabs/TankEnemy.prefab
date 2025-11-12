@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 8877547819031239359}
   - component: {fileID: 9060303391744734566}
   - component: {fileID: 500143471830670549}
+  - component: {fileID: 3857570807278012923}
   m_Layer: 0
   m_Name: TankEnemy
   m_TagString: Untagged
@@ -48,11 +49,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fdb6314826429284798505fde804ee2d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enemyType: Tank
   maxHealth: 250
   health: 250
-  moveSpeed: 1.5
-  detectionRange: 40
+  moveSpeed: 3.5
+  detectionRange: 100
   attackRange: 4
   attackDamage: 50
   attackCooldown: 2.5
@@ -68,6 +68,11 @@ MonoBehaviour:
   player: {fileID: 0}
   agent: {fileID: 0}
   animator: {fileID: 0}
+  bloodHitEffectPrefab: {fileID: 0}
+  hitEffectSpawnPoint: {fileID: 0}
+  enableHitFeedback: 1
+  hitFeedbackDuration: 0.4
+  hitFlashColor: {r: 1, g: 0, b: 0, a: 1}
   forceAnimatorAlwaysAnimate: 1
   disableAnimatorRootMotion: 1
 --- !u!195 &8877547819031239359
@@ -142,6 +147,28 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!95 &3857570807278012923
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5240704064939595747}
+  m_Enabled: 1
+  m_Avatar: {fileID: 9000000, guid: 733811f653f4f384b88a15367af36413, type: 3}
+  m_Controller: {fileID: 9100000, guid: 2bc9c925667a73f4e8f366ecc79f2356, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1001 &8193906344301834950
 PrefabInstance:
   m_ObjectHideFlags: 0

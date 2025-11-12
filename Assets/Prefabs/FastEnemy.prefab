@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 5928143248373744980}
   - component: {fileID: 6001987873208266008}
   - component: {fileID: 5548917557143884751}
+  - component: {fileID: 4268172897358791794}
   m_Layer: 0
   m_Name: FastEnemy
   m_TagString: Untagged
@@ -48,11 +49,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e1dc3a3f4fa93414a9da59ac48adadc6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enemyType: Fast
   maxHealth: 50
   health: 50
-  moveSpeed: 6
-  detectionRange: 40
+  moveSpeed: 8
+  detectionRange: 100
   attackRange: 2.5
   attackDamage: 15
   attackCooldown: 0.8
@@ -69,6 +69,11 @@ MonoBehaviour:
   player: {fileID: 0}
   agent: {fileID: 0}
   animator: {fileID: 0}
+  bloodHitEffectPrefab: {fileID: 0}
+  hitEffectSpawnPoint: {fileID: 0}
+  enableHitFeedback: 1
+  hitFeedbackDuration: 0.2
+  hitFlashColor: {r: 1, g: 0, b: 0, a: 1}
   forceAnimatorAlwaysAnimate: 1
   disableAnimatorRootMotion: 1
 --- !u!195 &5928143248373744980
@@ -143,6 +148,28 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!95 &4268172897358791794
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 580475504510449824}
+  m_Enabled: 1
+  m_Avatar: {fileID: 9000000, guid: 68b32592289f0b74abc11bc5c1f69cea, type: 3}
+  m_Controller: {fileID: 9100000, guid: ffe3136108eb65340a5ee2e317b55196, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1001 &7835704492895888197
 PrefabInstance:
   m_ObjectHideFlags: 0

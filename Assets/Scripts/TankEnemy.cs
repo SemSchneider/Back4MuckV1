@@ -129,6 +129,27 @@ public class TankEnemy : MonoBehaviour
             {
                 var controllerName = animator.runtimeAnimatorController.name;
                 Debug.Log($"TankEnemy: Animator='{animator.name}', Controller='{controllerName}' on '{name}'");
+                
+                // Check if the model has an avatar
+                if (animator.avatar == null)
+                {
+                    Debug.LogWarning($"TankEnemy: No Avatar assigned to animator on '{name}'. This may cause animation issues. Consider setting Animation Type to 'Generic' in the model import settings.");
+                    
+                    // For models without avatars, ensure Generic animation type
+                    if (animator.isHuman)
+                    {
+                        Debug.LogError($"TankEnemy: Animator is set to Humanoid but no Avatar is assigned on '{name}'. Change the model's Animation Type to 'Generic' in import settings.");
+                    }
+                    else
+                    {
+                        Debug.Log($"TankEnemy: Using Generic animation type (recommended for models without avatars) on '{name}'");
+                    }
+                }
+                else
+                {
+                    Debug.Log($"TankEnemy: Avatar '{animator.avatar.name}' assigned, animation type: {(animator.isHuman ? "Humanoid" : "Generic")} on '{name}'");
+                }
+                
                 // Force rebind for runtime clones
                 animator.Rebind();
                 animator.Update(0f);
@@ -144,6 +165,19 @@ public class TankEnemy : MonoBehaviour
             hasChargeParam = TankEnemyAnimatorExtensions.AnimatorHasParameter(animator, CHARGE_PARAM, AnimatorControllerParameterType.Trigger);
             hasHitParam = TankEnemyAnimatorExtensions.AnimatorHasParameter(animator, HIT_PARAM, AnimatorControllerParameterType.Trigger);
 
+            // Debug all available parameters
+            Debug.Log($"TankEnemy: Checking animator controller '{animator.runtimeAnimatorController.name}' on '{name}'");
+            var allParams = animator.parameters;
+            Debug.Log($"TankEnemy: Found {allParams.Length} parameters:");
+            for (int i = 0; i < allParams.Length; i++)
+            {
+                var param = allParams[i];
+                Debug.Log($"  - {param.name} ({param.type})");
+            }
+
+            // Log parameter status for debugging
+            Debug.Log($"TankEnemy: Parameter mapping - Walk:{hasWalkParam}, Attack:{hasAttackParam}, Death:{hasDeathParam}, Charge:{hasChargeParam}, Hit:{hasHitParam}");
+            
             if (!hasWalkParam)
                 Debug.LogWarning($"TankEnemy: Animator missing Bool parameter '{WALK_PARAM}' on '{name}'.");
             if (!hasAttackParam)
@@ -213,6 +247,12 @@ public class TankEnemy : MonoBehaviour
         
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
         
+        // Continuously ensure walking animation loops while moving (like SimpleEnemy)
+        if (animator != null && hasWalkParam && animator.GetBool(WALK_PARAM))
+        {
+            EnsureWalkingAnimationLoops();
+        }
+        
         // Check if player is in detection range
         if (distanceToPlayer <= detectionRange)
         {
@@ -253,7 +293,10 @@ public class TankEnemy : MonoBehaviour
                 }
                     
                 if (animator != null && hasWalkParam)
+                {
                     animator.SetBool(WALK_PARAM, false);
+                    Debug.Log($"TankEnemy: Set {WALK_PARAM}=false (in attack range) on '{name}'");
+                }
                 
                 // Attack if cooldown is over
                 if (Time.time - lastAttackTime >= attackCooldown && !isAttacking)
@@ -268,10 +311,18 @@ public class TankEnemy : MonoBehaviour
                 {
                     agent.isStopped = false;
                     agent.SetDestination(player.position);
+                    
+                    // Simple walking animation like SimpleEnemy
                     if (animator != null && hasWalkParam)
                     {
                         animator.SetBool(WALK_PARAM, true);
                         Debug.Log($"TankEnemy: Set {WALK_PARAM}=true on '{name}'");
+                        
+                        // Force animator update for spawned enemies
+                        animator.Update(0f);
+                        
+                        // Ensure walking animation loops properly
+                        EnsureWalkingAnimationLoops();
                     }
                 }
             }
@@ -281,12 +332,15 @@ public class TankEnemy : MonoBehaviour
             // Player not in range, stop moving
             if (agent != null && agent.isActiveAndEnabled && !isCharging)
             {
-                agent.isStopped = false;
+                agent.isStopped = true;
                 agent.SetDestination(transform.position);
                 agent.velocity = Vector3.zero;
             }
             if (animator != null && hasWalkParam)
+            {
                 animator.SetBool(WALK_PARAM, false);
+                Debug.Log($"TankEnemy: Set {WALK_PARAM}=false (out of range) on '{name}'");
+            }
         }
     }
     
@@ -299,7 +353,14 @@ public class TankEnemy : MonoBehaviour
         
         // Trigger attack animation
         if (animator != null && hasAttackParam)
+        {
             animator.SetTrigger(ATTACK_PARAM);
+            Debug.Log($"TankEnemy: Triggered {ATTACK_PARAM} animation on '{name}'");
+        }
+        else if (animator != null)
+        {
+            Debug.LogWarning($"TankEnemy: Cannot trigger {ATTACK_PARAM} - parameter not found on '{name}'");
+        }
         
         // Deal damage to player
         if (player != null)
@@ -540,9 +601,13 @@ public class TankEnemy : MonoBehaviour
     
     public void Die()
     {
+        if (isDead) return; // Prevent multiple death calls
+        
         isDead = true;
         isCharging = false;
         isRecovering = false;
+        
+        Debug.Log($"TankEnemy: Starting death sequence for '{name}'");
         
         // Play death sound
         if (SoundManager.Instance != null)
@@ -550,7 +615,7 @@ public class TankEnemy : MonoBehaviour
             SoundManager.Instance.PlayZombieDeathSound(transform.position);
         }
         
-        // Stop movement
+        // Stop movement immediately
         if (agent != null)
         {
             agent.isStopped = true;
@@ -558,10 +623,32 @@ public class TankEnemy : MonoBehaviour
             agent.velocity = Vector3.zero;
             agent.enabled = false;
         }
+        
+        // Stop walking animation and trigger death animation
+        if (animator != null)
+        {
+            if (hasWalkParam)
+            {
+                animator.SetBool(WALK_PARAM, false);
+                Debug.Log($"TankEnemy: Set {WALK_PARAM}=false for death on '{name}'");
+            }
             
-        // Trigger death animation
-        if (animator != null && hasDeathParam)
-            animator.SetTrigger(DEATH_PARAM);
+            if (hasDeathParam)
+            {
+                animator.SetTrigger(DEATH_PARAM);
+                Debug.Log($"TankEnemy: Triggered {DEATH_PARAM} animation on '{name}'");
+                
+                // Force animator update to process the trigger
+                animator.Update(0f);
+                
+                // Check if death animation started
+                StartCoroutine(MonitorDeathAnimation());
+            }
+            else
+            {
+                Debug.LogWarning($"TankEnemy: Cannot trigger {DEATH_PARAM} - parameter not found on '{name}'");
+            }
+        }
         
         // Snap to ground
         StartCoroutine(SnapToGroundDelayed());
@@ -571,23 +658,123 @@ public class TankEnemy : MonoBehaviour
         if (col != null)
             col.enabled = false;
 
-        // Hide visuals after death animation
-        if (hideVisualsOnDeath)
-        {
-            StartCoroutine(HideAfterDeathAnimation());
-        }
-
-        // Destroy behavior
+        // Handle destruction based on death behavior
         if (deathBehavior == DeathBehavior.Instant)
         {
+            Debug.Log($"TankEnemy: Instant death - destroying immediately on '{name}'");
             Destroy(gameObject);
         }
         else
         {
-            Destroy(gameObject, Mathf.Max(0f, deathDestroyDelay));
+            Debug.Log($"TankEnemy: Timed death - will destroy in {deathDestroyDelay} seconds on '{name}'");
+            
+            // Hide visuals after death animation
+            if (hideVisualsOnDeath)
+            {
+                StartCoroutine(HideAfterDeathAnimation());
+            }
+            
+            // Destroy after delay
+            StartCoroutine(DestroyAfterDelay());
         }
 
-        Debug.Log("Tank Enemy died!");
+        Debug.Log($"TankEnemy: Death sequence initiated for '{name}'");
+    }
+    
+    // Method to ensure walking animation loops properly (from SimpleEnemy)
+    void EnsureWalkingAnimationLoops()
+    {
+        if (animator != null && hasWalkParam)
+        {
+            // Get current walking state info
+            var stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+            
+            // Check if we're in the walking state and if it's near the end
+            if (stateInfo.IsName("Walk") || stateInfo.IsName("Armature|Walk"))
+            {
+                // If animation is near the end (90% complete), reset it to loop
+                if (stateInfo.normalizedTime >= 0.9f)
+                {
+                    animator.Play("Walk", 0, 0f);
+                    Debug.Log($"TankEnemy: Reset walking animation to loop on '{name}'");
+                }
+            }
+        }
+    }
+    
+    // Verify walking animation is properly looping
+    System.Collections.IEnumerator VerifyWalkingAnimation()
+    {
+        yield return new WaitForSeconds(0.5f); // Wait for transition to complete
+        
+        if (animator != null && hasWalkParam && animator.GetBool(WALK_PARAM))
+        {
+            var stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+            
+            // Check if we're in a walking state
+            bool isInWalkState = stateInfo.IsName("Walk") || 
+                                stateInfo.IsName("Walking") || 
+                                stateInfo.IsName("Run") ||
+                                stateInfo.IsName("Move") ||
+                                stateInfo.normalizedTime > 0.1f; // Or if animation is progressing
+            
+            if (isInWalkState)
+            {
+                Debug.Log($"TankEnemy: Walking animation verified on '{name}' - State: {stateInfo.shortNameHash}, Time: {stateInfo.normalizedTime:F2}");
+            }
+            else
+            {
+                Debug.LogWarning($"TankEnemy: Walking animation may not be playing correctly on '{name}' - State: {stateInfo.shortNameHash}, Time: {stateInfo.normalizedTime:F2}");
+                
+                // Try to force the walking state again
+                if (hasWalkParam && agent != null && agent.velocity.magnitude > 0.1f)
+                {
+                    animator.SetBool(WALK_PARAM, false);
+                    yield return new WaitForFixedUpdate();
+                    animator.SetBool(WALK_PARAM, true);
+                    Debug.Log($"TankEnemy: Re-triggered walking animation on '{name}'");
+                }
+            }
+        }
+    }
+    
+    // Monitor death animation to ensure it plays
+    System.Collections.IEnumerator MonitorDeathAnimation()
+    {
+        if (animator == null) yield break;
+        
+        float timeout = 5f; // Max time to wait for death animation
+        float elapsed = 0f;
+        
+        Debug.Log($"TankEnemy: Monitoring death animation on '{name}'");
+        
+        while (elapsed < timeout)
+        {
+            if (animator.GetCurrentAnimatorStateInfo(0).IsName("Die") || 
+                animator.GetCurrentAnimatorStateInfo(0).IsName("Death"))
+            {
+                Debug.Log($"TankEnemy: Death animation started on '{name}'");
+                yield break; // Animation started successfully
+            }
+            
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        
+        Debug.LogWarning($"TankEnemy: Death animation did not start within {timeout} seconds on '{name}'");
+    }
+    
+    // Handle delayed destruction
+    System.Collections.IEnumerator DestroyAfterDelay()
+    {
+        yield return new WaitForSeconds(Mathf.Max(0f, deathDestroyDelay));
+        
+        Debug.Log($"TankEnemy: Destroying after delay of {deathDestroyDelay} seconds on '{name}'");
+        
+        if (gameObject != null)
+        {
+            Destroy(gameObject);
+        }
     }
     
     private void OnDestroy()
@@ -605,18 +792,56 @@ public class TankEnemy : MonoBehaviour
     // Coroutine to hide visuals after death animation
     System.Collections.IEnumerator HideAfterDeathAnimation()
     {
-        yield return new WaitForSeconds(3f); // Longer for tank death
+        if (animator != null)
+        {
+            // Wait for death animation to start
+            float waitTime = 0f;
+            float maxWaitTime = 1f;
+            
+            while (waitTime < maxWaitTime)
+            {
+                var stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+                if (stateInfo.IsName("Die") || stateInfo.IsName("Death"))
+                {
+                    Debug.Log($"TankEnemy: Death animation detected, waiting for completion on '{name}'");
+                    
+                    // Wait for animation to complete (or most of it)
+                    while (stateInfo.normalizedTime < 0.95f && animator != null)
+                    {
+                        yield return new WaitForSeconds(0.1f);
+                        if (animator != null)
+                            stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+                    }
+                    break;
+                }
+                
+                waitTime += Time.deltaTime;
+                yield return null;
+            }
+            
+            // Additional wait time for death animation
+            yield return new WaitForSeconds(1f);
+        }
+        else
+        {
+            // If no animator, just wait a bit
+            yield return new WaitForSeconds(2f);
+        }
+        
+        Debug.Log($"TankEnemy: Hiding visuals after death animation on '{name}'");
         
         var renderers = GetComponentsInChildren<Renderer>(true);
         for (int i = 0; i < renderers.Length; i++)
         {
-            renderers[i].enabled = false;
+            if (renderers[i] != null)
+                renderers[i].enabled = false;
         }
 
         var canvases = GetComponentsInChildren<Canvas>(true);
         for (int i = 0; i < canvases.Length; i++)
         {
-            canvases[i].enabled = false;
+            if (canvases[i] != null)
+                canvases[i].enabled = false;
         }
     }
     
@@ -668,19 +893,109 @@ public class TankEnemy : MonoBehaviour
         
         if (animator != null)
         {
+            Debug.Log($"TankEnemy: Starting delayed animator initialization for '{name}'");
+            
+            // Force animator to update
             animator.Rebind();
             animator.Update(0f);
-            animator.Play("Armature|Idle", 0, 0f);
             
-            Debug.Log($"TankEnemy: Delayed init - Testing animator parameters on '{name}'");
+            // Wait a frame for the rebind to take effect
+            yield return new WaitForEndOfFrame();
+            
+            // Check current state
+            if (animator.layerCount > 0)
+            {
+                var stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+                Debug.Log($"TankEnemy: Current state hash: {stateInfo.shortNameHash}, normalizedTime: {stateInfo.normalizedTime} on '{name}'");
+                
+                // Try to get state name if possible
+                if (animator.runtimeAnimatorController != null)
+                {
+                    Debug.Log($"TankEnemy: Animator controller has {animator.layerCount} layers");
+                }
+            }
+            
+            Debug.Log($"TankEnemy: Setting initial parameter values on '{name}'");
+            
+            // Set initial parameter values
             if (hasWalkParam)
             {
                 animator.SetBool(WALK_PARAM, false);
-                Debug.Log("  - Set IsWalking to false");
+                Debug.Log($"TankEnemy: Set {WALK_PARAM} to false (initial)");
+            }
+            
+            // Force another update to apply parameter changes
+            animator.Update(0f);
+            
+            // Verify parameter values were set
+            if (hasWalkParam)
+            {
+                bool walkValue = animator.GetBool(WALK_PARAM);
+                Debug.Log($"TankEnemy: Verified {WALK_PARAM} = {walkValue}");
             }
             
             Debug.Log($"TankEnemy: Delayed animator initialization completed for '{name}'");
         }
+        else
+        {
+            Debug.LogError($"TankEnemy: Animator is null during delayed initialization on '{name}'");
+        }
+    }
+    
+    // Debug method to check animator status - call this from the inspector or console
+    [System.Diagnostics.Conditional("UNITY_EDITOR")]
+    public void DebugAnimatorStatus()
+    {
+        if (animator == null)
+        {
+            Debug.LogError($"TankEnemy: No animator found on '{name}'");
+            return;
+        }
+        
+        Debug.Log($"=== ANIMATOR DEBUG for '{name}' ===");
+        Debug.Log($"Animator enabled: {animator.enabled}");
+        Debug.Log($"Animator gameObject active: {animator.gameObject.activeInHierarchy}");
+        Debug.Log($"Has controller: {animator.runtimeAnimatorController != null}");
+        Debug.Log($"Has avatar: {animator.avatar != null}");
+        Debug.Log($"Animation type: {(animator.isHuman ? "Humanoid" : "Generic")}");
+        
+        if (animator.runtimeAnimatorController != null)
+        {
+            Debug.Log($"Controller name: {animator.runtimeAnimatorController.name}");
+            Debug.Log($"Layer count: {animator.layerCount}");
+            
+            if (animator.layerCount > 0)
+            {
+                var stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+                Debug.Log($"Current state hash: {stateInfo.shortNameHash}");
+                Debug.Log($"Current state normalized time: {stateInfo.normalizedTime}");
+                Debug.Log($"Is in transition: {animator.IsInTransition(0)}");
+            }
+            
+            Debug.Log($"Available parameters:");
+            foreach (var param in animator.parameters)
+            {
+                string currentValue = "";
+                switch (param.type)
+                {
+                    case AnimatorControllerParameterType.Bool:
+                        currentValue = animator.GetBool(param.name).ToString();
+                        break;
+                    case AnimatorControllerParameterType.Float:
+                        currentValue = animator.GetFloat(param.name).ToString("F2");
+                        break;
+                    case AnimatorControllerParameterType.Int:
+                        currentValue = animator.GetInteger(param.name).ToString();
+                        break;
+                    case AnimatorControllerParameterType.Trigger:
+                        currentValue = "trigger";
+                        break;
+                }
+                Debug.Log($"  {param.name} ({param.type}): {currentValue}");
+            }
+        }
+        
+        Debug.Log($"=== END ANIMATOR DEBUG ===");
     }
     
     // Visual debugging
