@@ -1,12 +1,20 @@
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
+using System;
 
 /// <summary>
 /// Fast Enemy Archetype - Low health, fast movement, low damage, quick attacks, dodge ability
 /// </summary>
 public class FastEnemy : MonoBehaviour
 {
+    #region Events
+    
+    // Static event for when any fast enemy dies
+    public static event Action<GameObject> OnEnemyDied;
+    
+    #endregion
+
     [Header("Fast Enemy Settings")]
     public float maxHealth = 50f;  // Lower health than SimpleEnemy
     public float health = 50f;
@@ -232,7 +240,7 @@ public class FastEnemy : MonoBehaviour
         }
 
         // Initialize strafe direction randomly
-        strafeDirection = (Random.value > 0.5f) ? Vector3.right : Vector3.left;
+        strafeDirection = (UnityEngine.Random.value > 0.5f) ? Vector3.right : Vector3.left;
     }
     
     void Update()
@@ -452,7 +460,7 @@ public class FastEnemy : MonoBehaviour
         if (isDead) return;
         
         // Try to dodge if able and chance succeeds
-        if (canDodge && !isDodging && Random.value <= dodgeChance && Time.time - lastDodgeTime >= 2f)
+        if (canDodge && !isDodging && UnityEngine.Random.value <= dodgeChance && Time.time - lastDodgeTime >= 2f)
         {
             StartCoroutine(PerformDodge());
             // Still take damage but reduced
@@ -606,7 +614,7 @@ public class FastEnemy : MonoBehaviour
         {
             Vector3 directionToPlayer = (player.position - transform.position).normalized;
             Vector3 perpendicular = Vector3.Cross(directionToPlayer, Vector3.up);
-            dodgeDirection = (Random.value > 0.5f) ? perpendicular : -perpendicular;
+            dodgeDirection = (UnityEngine.Random.value > 0.5f) ? perpendicular : -perpendicular;
         }
         
         // Perform the dodge
@@ -659,6 +667,9 @@ public class FastEnemy : MonoBehaviour
         isDead = true;
         isDodging = false;
         isStrafing = false;
+        
+        // Notify that this fast enemy has died
+        OnEnemyDied?.Invoke(gameObject);
         
         Debug.Log($"FastEnemy: Starting death sequence for '{name}'");
         

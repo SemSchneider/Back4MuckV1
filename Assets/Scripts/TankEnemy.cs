@@ -1,12 +1,20 @@
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
+using System;
 
 /// <summary>
 /// Tank Enemy Archetype - High health, slow movement, high damage, longer range, charge attack
 /// </summary>
 public class TankEnemy : MonoBehaviour
 {
+    #region Events
+    
+    // Static event for when any tank enemy dies
+    public static event Action<GameObject> OnEnemyDied;
+    
+    #endregion
+
     [Header("Tank Enemy Settings")]
     public float maxHealth = 300f;  // Higher health (increased from 250f)
     public float health = 300f;
@@ -606,6 +614,9 @@ public class TankEnemy : MonoBehaviour
         isDead = true;
         isCharging = false;
         isRecovering = false;
+        
+        // Notify that this tank enemy has died
+        OnEnemyDied?.Invoke(gameObject);
         
         Debug.Log($"TankEnemy: Starting death sequence for '{name}'");
         

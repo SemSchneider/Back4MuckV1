@@ -1,12 +1,20 @@
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
+using System;
 
 /// <summary>
 /// Simple Enemy - Balanced baseline enemy with standard stats
 /// </summary>
 public class SimpleEnemy : MonoBehaviour
 {
+    #region Events
+    
+    // Static event for when any simple enemy dies
+    public static event Action<GameObject> OnEnemyDied;
+    
+    #endregion
+
     #region Enemy Configuration
 
     [Header("Enemy Settings")]
@@ -523,6 +531,9 @@ public class SimpleEnemy : MonoBehaviour
     public void Die()
     {
         isDead = true;
+        
+        // Notify that this simple enemy has died
+        OnEnemyDied?.Invoke(gameObject);
         
         // Play death sound
         if (SoundManager.Instance != null)

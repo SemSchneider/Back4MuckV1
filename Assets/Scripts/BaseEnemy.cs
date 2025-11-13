@@ -1,12 +1,20 @@
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
+using System;
 
 /// <summary>
 /// Base class for all enemy types, providing common functionality
 /// </summary>
 public abstract class BaseEnemy : MonoBehaviour
 {
+    #region Events
+    
+    // Static event for when any enemy dies
+    public static event Action<GameObject> OnEnemyDied;
+    
+    #endregion
+
     #region Base Enemy Configuration
 
     [Header("Base Enemy Settings")]
@@ -414,6 +422,9 @@ public abstract class BaseEnemy : MonoBehaviour
     public virtual void Die()
     {
         isDead = true;
+        
+        // Notify that this enemy has died
+        OnEnemyDied?.Invoke(gameObject);
         
         // Stop movement
         if (agent != null)
