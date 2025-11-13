@@ -164,13 +164,9 @@ public class EnemySpawnManager : MonoBehaviour
     {
         // Stop all spawning when day starts
         StopSpawning();
-        // Despawn all remaining enemies in the scene
-        var enemies = GameObject.FindGameObjectsWithTag("Enemy");
-        foreach (var enemy in enemies)
-        {
-            Destroy(enemy);
-        }
-        LogDebug($"Day {nightNumber} started - Stopped all enemy spawning and despawned {enemies.Length} enemies");
+        // Note: Enemies are no longer despawned when day starts - they remain active
+        // This allows players to continue fighting leftover enemies during the day
+        LogDebug($"Day {nightNumber} started - Stopped enemy spawning (enemies remain active)");
     }
     
     /// <summary>

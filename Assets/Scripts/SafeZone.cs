@@ -44,6 +44,33 @@ public class SafeZone : MonoBehaviour
     // Events
     public static event Action OnZoneCaptured;
     
+    // Helper method to safely show announcements
+    private void ShowAnnouncement(string message, float duration = 2f, string type = "info")
+    {
+        if (AnnouncementUI.Instance != null)
+        {
+            switch (type.ToLower())
+            {
+                case "success":
+                    AnnouncementUI.Instance.ShowSuccess(message, duration);
+                    break;
+                case "warning":
+                    AnnouncementUI.Instance.ShowWarning(message, duration);
+                    break;
+                case "danger":
+                    AnnouncementUI.Instance.ShowDanger(message, duration);
+                    break;
+                default:
+                    AnnouncementUI.Instance.ShowInfo(message, duration);
+                    break;
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"[SafeZone] AnnouncementUI not available. Message: {message}");
+        }
+    }
+    
     void Start()
     {
         SetupSafeZone();
@@ -196,6 +223,9 @@ public class SafeZone : MonoBehaviour
         zoneCompleted = true;
         Debug.Log("Safe Zone Captured!");
         
+        // Show completion announcement
+        ShowAnnouncement("Safe Zone Captured! - Victory!", 3f, "success");
+        
         // Raise the event
         OnZoneCaptured?.Invoke();
         
@@ -227,11 +257,20 @@ public class SafeZone : MonoBehaviour
             playerHealth = other.GetComponent<PlayerHealth>();
             
             Debug.Log($"[SafeZone] ✅ PLAYER ENTERED safe zone! PlayerHealth found: {playerHealth != null}");
+            
+            // Show announcement
+            ShowAnnouncement("Entered Safe Zone - Healing & Slower Capture", 2f, "success");
         }
         else if (other.CompareTag(enemyTag))
         {
             enemiesInside.Add(other.gameObject);
             Debug.Log($"[SafeZone] Enemy '{other.name}' entered safe zone. Enemies inside: {enemiesInside.Count}");
+            
+            // Show contest message if player is inside
+            if (playerInside && enemiesInside.Count == 1) // First enemy to enter while player is inside
+            {
+                ShowAnnouncement("Zombies in Safe Zone - Progress Paused", 2f, "warning");
+            }
         }
         else
         {
@@ -249,11 +288,20 @@ public class SafeZone : MonoBehaviour
             playerHealth = null;
             
             Debug.Log("[SafeZone] ❌ PLAYER LEFT safe zone");
+            
+            // Show announcement
+            ShowAnnouncement("Left Safe Zone - No Healing / Faster Capture", 2f, "danger");
         }
         else if (other.CompareTag(enemyTag))
         {
             enemiesInside.Remove(other.gameObject);
             Debug.Log($"[SafeZone] Enemy '{other.name}' left safe zone. Enemies inside: {enemiesInside.Count}");
+            
+            // Show zone clear message if player is inside and this was the last enemy
+            if (playerInside && enemiesInside.Count == 0)
+            {
+                ShowAnnouncement("Zone Clear — Capture Resumed", 2f, "success");
+            }
         }
     }
     
