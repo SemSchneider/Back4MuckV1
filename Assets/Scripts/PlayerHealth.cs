@@ -7,6 +7,9 @@ using TMPro;
 /// </summary>
 public class PlayerHealth : MonoBehaviour
 {
+    // Uncomment the line below to enable verbose player health debugging
+    // #define DEBUG_PLAYER_HEALTH
+    
     #region Health Configuration
     
     [Header("Health Settings")]
@@ -80,11 +83,15 @@ public class PlayerHealth : MonoBehaviour
         UpdateHealthUI();
         TriggerDamageFeedback(damage);
         
+#if DEBUG_PLAYER_HEALTH
         Debug.Log($"Player took {damage} damage. Health: {currentHealth:F1}/{maxHealth:F1}");
+#endif
         
         if (currentHealth <= 0)
         {
+#if DEBUG_PLAYER_HEALTH
             Debug.Log($"Player died after taking {damage} damage");
+#endif
             Die();
         }
     }
@@ -98,7 +105,9 @@ public class PlayerHealth : MonoBehaviour
         
         UpdateHealthUI();
         
+#if DEBUG_PLAYER_HEALTH
         Debug.Log($"Player healed for {amount}. Health: {currentHealth:F1}/{maxHealth:F1}");
+#endif
     }
     
     #endregion

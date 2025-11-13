@@ -12,6 +12,9 @@ using System;
 /// </summary>
 public class SafeZone : MonoBehaviour
 {
+    // Uncomment the line below to enable verbose safe zone debugging
+    // #define DEBUG_SAFE_ZONE
+    
     [Header("Zone Settings")]
     public float healPerSecond = 5f;
     public float capturePerSecond = 10f;
@@ -114,7 +117,9 @@ public class SafeZone : MonoBehaviour
                 captureProgress += decayPerSecond * Time.deltaTime;  // Use slower decay rate
                 captureProgress = Mathf.Clamp(captureProgress, 0f, captureMax);
                 
+#if DEBUG_SAFE_ZONE
                 Debug.Log($"[SafeZone] 🐌 Player inside & safe! Progress: {captureProgress:F1}/{captureMax} (+{decayPerSecond}/sec)");
+#endif
                 UpdateCaptureUI();
                 
                 // Check if zone is captured
@@ -129,7 +134,9 @@ public class SafeZone : MonoBehaviour
                 captureProgress += capturePerSecond * Time.deltaTime;  // Use faster capture rate
                 captureProgress = Mathf.Clamp(captureProgress, 0f, captureMax);
                 
+#if DEBUG_SAFE_ZONE
                 Debug.Log($"[SafeZone] 🏃‍♂️ Player outside! Fast progress: {captureProgress:F1}/{captureMax} (+{capturePerSecond}/sec)");
+#endif
                 UpdateCaptureUI();
                 
                 // Check if zone is captured
@@ -141,7 +148,9 @@ public class SafeZone : MonoBehaviour
             else
             {
                 // Player inside but enemies present, pause (no increase or decrease)
+#if DEBUG_SAFE_ZONE
                 Debug.Log($"[SafeZone] ⏸️ Player inside but {enemiesInside.Count} enemies present! Progress paused at: {captureProgress:F1}/{captureMax}");
+#endif
             }
         }
     }
@@ -249,14 +258,18 @@ public class SafeZone : MonoBehaviour
     
     void OnTriggerEnter(Collider other)
     {
+#if DEBUG_SAFE_ZONE
         Debug.Log($"[SafeZone] Something entered trigger: '{other.name}' with tag '{other.tag}' and layer '{LayerMask.LayerToName(other.gameObject.layer)}'");
+#endif
         
         if (other.CompareTag(playerTag))
         {
             playerInside = true;
             playerHealth = other.GetComponent<PlayerHealth>();
             
+#if DEBUG_SAFE_ZONE
             Debug.Log($"[SafeZone] ✅ PLAYER ENTERED safe zone! PlayerHealth found: {playerHealth != null}");
+#endif
             
             // Show announcement
             ShowAnnouncement("Entered Safe Zone - Healing & Slower Capture", 2f, "success");

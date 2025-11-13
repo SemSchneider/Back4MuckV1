@@ -2,29 +2,34 @@ using UnityEngine;
 
 public class Bullet : MonoBehaviour
 {
+    // Uncomment the line below to enable bullet hit debugging
+    // #define DEBUG_BULLET_HITS
+    
     private void OnCollisionEnter(Collision objectWeHit)
     {
         if (objectWeHit.gameObject.CompareTag("Target"))
         {
+#if DEBUG_BULLET_HITS
             print("hit " + objectWeHit.gameObject.name);
-
+#endif
             CreateBulletImpactEffect(objectWeHit);
-
             Destroy(gameObject);
         }
 
         if (objectWeHit.gameObject.CompareTag("Wall"))
         {
+#if DEBUG_BULLET_HITS
             print("hit a wall");
-
+#endif
             CreateBulletImpactEffect(objectWeHit);
-
             Destroy(gameObject);
         }
         
         if (objectWeHit.gameObject.CompareTag("Beer"))
         {
+#if DEBUG_BULLET_HITS
             print("hit a beer");
+#endif
             objectWeHit.gameObject.GetComponent<BeerBottle>().Shatter();
         }
         
@@ -32,7 +37,9 @@ public class Bullet : MonoBehaviour
         SimpleEnemy simpleEnemy = objectWeHit.gameObject.GetComponent<SimpleEnemy>();
         if (simpleEnemy != null)
         {
+#if DEBUG_BULLET_HITS
             print("hit SimpleEnemy: " + objectWeHit.gameObject.name);
+#endif
             simpleEnemy.TakeDamage(25f); // Deal 25 damage to enemy
             CreateBulletImpactEffect(objectWeHit);
             Destroy(gameObject);
@@ -43,7 +50,9 @@ public class Bullet : MonoBehaviour
         TankEnemy tankEnemy = objectWeHit.gameObject.GetComponent<TankEnemy>();
         if (tankEnemy != null)
         {
+#if DEBUG_BULLET_HITS
             print("hit TankEnemy: " + objectWeHit.gameObject.name);
+#endif
             tankEnemy.TakeDamage(25f); // Deal 25 damage to tank enemy
             CreateBulletImpactEffect(objectWeHit);
             Destroy(gameObject);
@@ -54,7 +63,9 @@ public class Bullet : MonoBehaviour
         FastEnemy fastEnemy = objectWeHit.gameObject.GetComponent<FastEnemy>();
         if (fastEnemy != null)
         {
+#if DEBUG_BULLET_HITS
             print("hit FastEnemy: " + objectWeHit.gameObject.name);
+#endif
             fastEnemy.TakeDamage(25f); // Deal 25 damage to fast enemy
             CreateBulletImpactEffect(objectWeHit);
             Destroy(gameObject);

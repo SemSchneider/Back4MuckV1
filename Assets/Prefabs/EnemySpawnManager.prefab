@@ -44,7 +44,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe6c2e514fbcf5b4b816bacc999fd867, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enemyPrefab: {fileID: 1541928481943697490, guid: 1e5873bae5e7e3845a9a4a887c4c94f8, type: 3}
+  enemyPrefab: {fileID: 0}
   baseCount: 3
   perNightIncrement: 2
   hardCap: 20
@@ -55,7 +55,9 @@ MonoBehaviour:
   budgetPerNight: 5
   budgetCap: 100
   maxAlive: 15
-  enemyArchetypes: []
+  enemyArchetypes:
+  - {fileID: 11400000, guid: 18eb0c092ee58464a86dbcfcbbe0f68f, type: 2}
+  - {fileID: 11400000, guid: 6840a9a8c9c3ef740a5b82475897af8b, type: 2}
   spawnAsHordes: 1
   minHordeSize: 3
   maxHordeSize: 8

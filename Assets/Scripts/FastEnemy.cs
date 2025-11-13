@@ -8,6 +8,9 @@ using System;
 /// </summary>
 public class FastEnemy : MonoBehaviour
 {
+    // Uncomment the line below to enable verbose fast enemy debugging
+    // #define DEBUG_FAST_ENEMY
+    
     #region Events
     
     // Static event for when any fast enemy dies
@@ -263,10 +266,12 @@ public class FastEnemy : MonoBehaviour
         }
         
         // Debug log occasionally
+#if DEBUG_FAST_ENEMY
         if (Time.frameCount % 60 == 0) // Once per second at 60fps
         {
             Debug.Log($"FastEnemy '{name}': Distance to player: {distanceToPlayer:F2}, Detection range: {detectionRange:F2}, In range: {distanceToPlayer <= detectionRange}");
         }
+#endif
         
         // Update strafe timer
         strafeTimer += Time.deltaTime;
@@ -307,7 +312,9 @@ public class FastEnemy : MonoBehaviour
                 if (animator != null && hasWalkParam)
                 {
                     animator.SetBool(WALK_PARAM, false);
+#if DEBUG_FAST_ENEMY
                     Debug.Log($"FastEnemy: Set {WALK_PARAM}=false (in attack range) on '{name}'");
+#endif
                 }
                 
                 isStrafing = false;
@@ -369,7 +376,9 @@ public class FastEnemy : MonoBehaviour
                     if (animator != null && hasWalkParam)
                     {
                         animator.SetBool(WALK_PARAM, true);
+#if DEBUG_FAST_ENEMY
                         Debug.Log($"FastEnemy: Set {WALK_PARAM}=true on '{name}' (strafing: {isStrafing})");
+#endif
                         
                         // Force animator update for spawned enemies
                         animator.Update(0f);
@@ -392,7 +401,9 @@ public class FastEnemy : MonoBehaviour
             if (animator != null && hasWalkParam)
             {
                 animator.SetBool(WALK_PARAM, false);
+#if DEBUG_FAST_ENEMY
                 Debug.Log($"FastEnemy: Set {WALK_PARAM}=false (out of range) on '{name}'");
+#endif
             }
             
             isStrafing = false;
@@ -469,7 +480,9 @@ public class FastEnemy : MonoBehaviour
         }
         
         health -= damage;
+#if DEBUG_FAST_ENEMY
         Debug.Log($"Fast Enemy took {damage} damage. Health: {health:F1}/{maxHealth:F1}");
+#endif
         
         // Trigger hit feedback
         if (enableHitFeedback)
@@ -479,7 +492,9 @@ public class FastEnemy : MonoBehaviour
         
         if (health <= 0)
         {
+#if DEBUG_FAST_ENEMY
             Debug.Log($"Fast Enemy died after taking {damage} damage");
+#endif
             Die();
         }
     }

@@ -9,6 +9,9 @@ using System.Collections;
 /// </summary>
 public class AnnouncementUI : MonoBehaviour
 {
+    // Uncomment the line below to enable verbose announcement UI debugging
+    // #define DEBUG_ANNOUNCEMENT_UI
+    
     [Header("UI Components")]
     public CanvasGroup canvasGroup;
     public TextMeshProUGUI announcementText;
@@ -156,7 +159,9 @@ public class AnnouncementUI : MonoBehaviour
         // Set the message text
         announcementText.text = message;
         
+#if DEBUG_ANNOUNCEMENT_UI
         Debug.Log($"[AnnouncementUI] Showing: '{message}' for {holdDuration}s");
+#endif
         
         // Fade In
         yield return StartCoroutine(FadeCanvasGroup(0f, 1f, fadeInDuration));
@@ -172,7 +177,9 @@ public class AnnouncementUI : MonoBehaviour
         isShowing = false;
         currentAnnouncementCoroutine = null;
         
+#if DEBUG_ANNOUNCEMENT_UI
         Debug.Log("[AnnouncementUI] Announcement completed");
+#endif
     }
     
     private IEnumerator FadeCanvasGroup(float startAlpha, float endAlpha, float duration)

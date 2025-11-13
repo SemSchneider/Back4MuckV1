@@ -8,6 +8,9 @@ using System;
 /// </summary>
 public class TankEnemy : MonoBehaviour
 {
+    // Uncomment the line below to enable verbose tank enemy debugging
+    // #define DEBUG_TANK_ENEMY
+    
     #region Events
     
     // Static event for when any tank enemy dies
@@ -89,7 +92,9 @@ public class TankEnemy : MonoBehaviour
             if (playerObj != null)
             {
                 player = playerObj.transform;
+#if DEBUG_TANK_ENEMY
                 Debug.Log($"TankEnemy: Found player '{playerObj.name}'");
+#endif
             }
             else
             {
@@ -116,7 +121,9 @@ public class TankEnemy : MonoBehaviour
             if (!animator.enabled)
             {
                 animator.enabled = true;
+#if DEBUG_TANK_ENEMY
                 Debug.LogWarning($"TankEnemy: Animator was disabled on '{name}', enabling it.");
+#endif
             }
             // Always animate (important for runtime clones)
             if (forceAnimatorAlwaysAnimate)
@@ -135,6 +142,7 @@ public class TankEnemy : MonoBehaviour
             }
             else
             {
+#if DEBUG_TANK_ENEMY
                 var controllerName = animator.runtimeAnimatorController.name;
                 Debug.Log($"TankEnemy: Animator='{animator.name}', Controller='{controllerName}' on '{name}'");
                 
@@ -157,11 +165,14 @@ public class TankEnemy : MonoBehaviour
                 {
                     Debug.Log($"TankEnemy: Avatar '{animator.avatar.name}' assigned, animation type: {(animator.isHuman ? "Humanoid" : "Generic")} on '{name}'");
                 }
+#endif
                 
                 // Force rebind for runtime clones
                 animator.Rebind();
                 animator.Update(0f);
+#if DEBUG_TANK_ENEMY
                 Debug.Log($"TankEnemy: Forced animator rebind on '{name}'");
+#endif
                 // Additional setup for spawned enemies
                 StartCoroutine(DelayedAnimatorInitialization());
             }
@@ -173,6 +184,7 @@ public class TankEnemy : MonoBehaviour
             hasChargeParam = TankEnemyAnimatorExtensions.AnimatorHasParameter(animator, CHARGE_PARAM, AnimatorControllerParameterType.Trigger);
             hasHitParam = TankEnemyAnimatorExtensions.AnimatorHasParameter(animator, HIT_PARAM, AnimatorControllerParameterType.Trigger);
 
+#if DEBUG_TANK_ENEMY
             // Debug all available parameters
             Debug.Log($"TankEnemy: Checking animator controller '{animator.runtimeAnimatorController.name}' on '{name}'");
             var allParams = animator.parameters;
@@ -185,6 +197,7 @@ public class TankEnemy : MonoBehaviour
 
             // Log parameter status for debugging
             Debug.Log($"TankEnemy: Parameter mapping - Walk:{hasWalkParam}, Attack:{hasAttackParam}, Death:{hasDeathParam}, Charge:{hasChargeParam}, Hit:{hasHitParam}");
+#endif
             
             if (!hasWalkParam)
                 Debug.LogWarning($"TankEnemy: Animator missing Bool parameter '{WALK_PARAM}' on '{name}'.");
@@ -303,7 +316,9 @@ public class TankEnemy : MonoBehaviour
                 if (animator != null && hasWalkParam)
                 {
                     animator.SetBool(WALK_PARAM, false);
+#if DEBUG_TANK_ENEMY
                     Debug.Log($"TankEnemy: Set {WALK_PARAM}=false (in attack range) on '{name}'");
+#endif
                 }
                 
                 // Attack if cooldown is over
@@ -324,7 +339,9 @@ public class TankEnemy : MonoBehaviour
                     if (animator != null && hasWalkParam)
                     {
                         animator.SetBool(WALK_PARAM, true);
+#if DEBUG_TANK_ENEMY
                         Debug.Log($"TankEnemy: Set {WALK_PARAM}=true on '{name}'");
+#endif
                         
                         // Force animator update for spawned enemies
                         animator.Update(0f);
@@ -347,7 +364,9 @@ public class TankEnemy : MonoBehaviour
             if (animator != null && hasWalkParam)
             {
                 animator.SetBool(WALK_PARAM, false);
+#if DEBUG_TANK_ENEMY
                 Debug.Log($"TankEnemy: Set {WALK_PARAM}=false (out of range) on '{name}'");
+#endif
             }
         }
     }
@@ -357,13 +376,17 @@ public class TankEnemy : MonoBehaviour
         isAttacking = true;
         lastAttackTime = Time.time;
         
+#if DEBUG_TANK_ENEMY
         Debug.Log($"TankEnemy: Performing heavy attack on '{name}'");
+#endif
         
         // Trigger attack animation
         if (animator != null && hasAttackParam)
         {
             animator.SetTrigger(ATTACK_PARAM);
+#if DEBUG_TANK_ENEMY
             Debug.Log($"TankEnemy: Triggered {ATTACK_PARAM} animation on '{name}'");
+#endif
         }
         else if (animator != null)
         {
@@ -380,7 +403,9 @@ public class TankEnemy : MonoBehaviour
                 if (playerHealth != null)
                 {
                     playerHealth.TakeDamage(attackDamage);
+#if DEBUG_TANK_ENEMY
                     Debug.Log($"Tank enemy attacked player for {attackDamage} damage!");
+#endif
                 }
                 else
                 {
@@ -495,7 +520,9 @@ public class TankEnemy : MonoBehaviour
         if (isDead) return;
         
         health -= damage;
+#if DEBUG_TANK_ENEMY
         Debug.Log($"Tank Enemy took {damage} damage. Health: {health:F1}/{maxHealth:F1}");
+#endif
         
         // Trigger hit feedback
         if (enableHitFeedback)
@@ -505,7 +532,9 @@ public class TankEnemy : MonoBehaviour
         
         if (health <= 0)
         {
+#if DEBUG_TANK_ENEMY
             Debug.Log($"Tank Enemy died after taking {damage} damage");
+#endif
             Die();
         }
     }
