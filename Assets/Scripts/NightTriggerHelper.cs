@@ -49,7 +49,7 @@ public class NightTriggerHelper : MonoBehaviour
             Debug.Log($"NightTriggerHelper: {message}");
         }
     }
-    
+
     /// <summary>
     /// Display on-screen instructions
     /// </summary>
@@ -57,16 +57,24 @@ public class NightTriggerHelper : MonoBehaviour
     {
         if (showOnScreenInstructions)
         {
-            GUI.Label(new Rect(10, 10, 300, 20), "Press N to start next night");
-            
+            // Maak een GUIStyle aan voor de labels
+            GUIStyle style = new GUIStyle(GUI.skin.label);
+            style.fontSize = 24;                  // Zet hier de gewenste fontgrootte
+            style.normal.textColor = Color.white; // Optioneel: tekstkleur
+            style.alignment = TextAnchor.UpperLeft;
+
+            // Lege label (optioneel, blijft zoals je had)
+            GUI.Label(new Rect(10, 10, 300, 30), "", style);
+
             if (NightManager.Instance != null)
             {
-                GUI.Label(new Rect(10, 30, 300, 20), $"Current Night: {NightManager.Instance.CurrentNight}");
+                GUI.Label(new Rect(10, 0, 300, 40), $"Current Night: {NightManager.Instance.CurrentNight}", style);
             }
             else
             {
-                GUI.Label(new Rect(10, 30, 300, 20), "NightManager not found!");
+                GUI.Label(new Rect(10, 40, 300, 40), "NightManager not found!", style);
             }
         }
     }
+
 }
